@@ -2,17 +2,15 @@ cmake_minimum_required(VERSION 3.5.1)
 
 set(CMAKE_VERBOSE_MAKEFILE off)
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_C_COMPILER "gcc-5")
-set(CMAKE_CXX_COMPILER "/usr/bin/g++-5")
 add_compile_options(-Wfatal-errors)
 
 project(cli-table)
 
 include_directories(
     inc
-    /usr/local/boost_1_63_0
+    /usr/local/boost_1_62_0
 )
-link_directories(/usr/local/boost_1_63_0/stage/lib)
+link_directories(/usr/local/boost_1_62_0/stage/lib)
 
 add_library(tablib inc/table.cpp)
 

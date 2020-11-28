@@ -1,6 +1,8 @@
+#include <cmath>
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <numeric>
 #include <iostream>
 #include <algorithm>
 #include "table.hpp"

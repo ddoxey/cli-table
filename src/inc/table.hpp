@@ -1,5 +1,5 @@
-#ifndef __FINANCE_TABLE_HPP_INCLUDED__
-#define __FINANCE_TABLE_HPP_INCLUDED__
+#ifndef __TABLE_HPP_INCLUDED__
+#define __TABLE_HPP_INCLUDED__
 
 #include <string>
 #include <memory>
