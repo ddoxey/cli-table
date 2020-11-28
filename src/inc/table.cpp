@@ -246,8 +246,6 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
         row_n++;
     });
 
-    debug_widths_(width_for);
-
     max_row_width = std::max(
         max_row_width + (1 + max_col_n), // plus vertical bar chars
         minimum_table_width
@@ -271,34 +269,5 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
         }
     });
 
-    debug_widths_(width_for);
-
     return width_for;
-}
-
-void Table::debug_widths_(std::vector<std::shared_ptr<std::vector<size_t>>> &width_for) const
-{
-    std::cout << "minimum_table_width: " << minimum_table_width << std::endl;
-
-    std::for_each(
-        width_for.begin(),
-        width_for.end(),
-        [](auto &cols)
-    {
-        size_t markup_chars = 1 + cols.get()->size();
-
-        std::cout << markup_chars;
-
-        std::for_each(
-            cols.get()->begin(),
-            cols.get()->end(),
-            [](auto &width)
-        {
-            std::cout << " + " << width;
-        });
-
-        size_t total = std::accumulate(cols.get()->begin(), cols.get()->end(), markup_chars);
-
-        std::cout << " = " << total << std::endl;
-    });
 }
