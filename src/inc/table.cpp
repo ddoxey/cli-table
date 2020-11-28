@@ -30,25 +30,34 @@ Table::Table(size_t width)
 Table::Table(std::string title, size_t width)
     : minimum_table_width(width)
 {
-    rows = std::vector<std::shared_ptr<std::vector<std::string>>>();
+    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>>();
     add_header(title);
 }
 
 Table::Table(std::string title)
 {
-    rows = std::vector<std::shared_ptr<std::vector<std::string>>>();
+    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>>();
     add_header(title);
 }
 
 void Table::add_header(const std::string &title)
 {
-    auto cols = std::shared_ptr<std::vector<std::string>>(new std::vector<std::string>());
-    cols.get()->push_back(title);
+    auto cols = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
+    cols.get()->push_back(std::shared_ptr<Cell>(new Cell(title)));
     rows.push_back(cols);
 }
 
-void Table::add_row(const std::shared_ptr<std::vector<std::string>> &cols)
+void Table::add_row(const std::shared_ptr<std::vector<std::string>> &columns)
 {
+    auto cols = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
+   
+    std::for_each(columns.get()->begin(), columns.get()->end(),
+        [&cols](std::string &col)
+        {
+            cols.get()->push_back(std::shared_ptr<Cell>(new Cell(col)));
+        }
+    );
+
     rows.push_back(cols);
 }
 
@@ -70,7 +79,7 @@ void Table::render() const
         std::for_each(
             cols.get()->begin(),
             cols.get()->end(),
-            [&row_n, &col_n, &width_for](std::string &col)
+            [&row_n, &col_n, &width_for](auto &col)
         {
             size_t col_count = width_for.at(row_n).get()->size();
             size_t width = width_for.at(row_n).get()->at(col_n);
@@ -80,8 +89,8 @@ void Table::render() const
 
             if (col_count == 1)
             {
-                size_t left_size = std::ceil((width - col.length()) / 2);
-                size_t right_size = left_size + (col.length() % 2 ? 0 : 1);
+                size_t left_size = std::ceil((width - col.get()->length()) / 2);
+                size_t right_size = left_size + (col.get()->length() % 2 ? 0 : 1);
                 pad_left.resize(left_size);
                 std::fill(pad_left.begin(), pad_left.end(), ' ');
                 pad_right.resize(right_size);
@@ -89,12 +98,12 @@ void Table::render() const
             }
             else
             {
-                size_t right_size = width - ( 1 + col.length() );
+                size_t right_size = width - ( 1 + col.get()->length() );
                 pad_right.resize(right_size);
                 std::fill(pad_right.begin(), pad_right.end(), ' ');
             }
 
-            std::cout << VERT << pad_left << col << pad_right;
+            std::cout << VERT << pad_left << *col.get() << pad_right;
 
             col_n++;
         });
@@ -204,10 +213,10 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
         std::for_each(
             cols.get()->begin(),
             cols.get()->end(),
-            [&row_n, &col_n, &row_width, &widths, &width_for](std::string &col)
+            [&row_n, &col_n, &row_width, &widths, &width_for](auto &col)
         {
             size_t above_width = 0;
-            size_t width = MIN_PADDING + col.length();
+            size_t width = MIN_PADDING + col.get()->length();
 
             for (int r_n = row_n - 1; r_n >= 0; r_n--)
             {

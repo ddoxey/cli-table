@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include "table/cell.hpp"
 #include "boxchars.hpp"
 
 
@@ -22,7 +23,7 @@ public:
 
 private:
     size_t minimum_table_width = 0;
-    std::vector<std::shared_ptr<std::vector<std::string>>> rows;
+    std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>> rows;
 
     void horizontal(std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const;
     void intermediate(std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const;

@@ -12,7 +12,7 @@ include_directories(
 )
 link_directories(/usr/local/boost_1_62_0/stage/lib)
 
-add_library(tablib inc/table.cpp)
+add_library(tablib inc/table.cpp inc/table/cell.cpp)
 
 add_executable(table main.cpp inc/table.hpp)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
