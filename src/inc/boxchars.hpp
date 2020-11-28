@@ -1,10 +1,6 @@
 #ifndef __FINANCE_BOXCHARS_HPP_INCLUDED__
 #define __FINANCE_BOXCHARS_HPP_INCLUDED__
 
-/***
- * http://www.fileformat.info/info/unicode/category/So/list.htm
- */
-
 #define LIGHT_HORIZONTAL "\u2500"
 #define HEAVY_HORIZONTAL "\u2501"
 #define LIGHT_VERTICAL "\u2502"
