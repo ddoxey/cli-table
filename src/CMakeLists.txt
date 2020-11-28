@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.5.1)
 
 set(CMAKE_VERBOSE_MAKEFILE off)
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_BINARY_DIR ..)
+set(CMAKE_C_COMPILER "gcc-5")
+set(CMAKE_CXX_COMPILER "/usr/bin/g++-5")
 add_compile_options(-Wfatal-errors)
 
 project(cli-table)
