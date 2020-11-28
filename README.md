@@ -4,6 +4,7 @@ Formatted tables on the CLI
 # USAGE:
 
 Given some file data.csv, such that: cat data.csv
+```
 a,b,c,d,e
 f,g,h,i,j
 k,l,m,n,o
@@ -27,4 +28,4 @@ v,w,x,y,z
 │ p │ r │ s │ t │ u │
 │ v │ w │ x │ y │ z │
 └───┴───┴───┴───┴───┘
-
+```
