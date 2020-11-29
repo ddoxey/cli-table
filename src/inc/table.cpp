@@ -1,9 +1,5 @@
 #include <cmath>
-#include <string>
-#include <sstream>
-#include <fstream>
 #include <numeric>
-#include <iostream>
 #include <algorithm>
 #include "table.hpp"
 
@@ -50,7 +46,7 @@ void Table::add_header(const std::string &title)
 void Table::add_row(const std::shared_ptr<std::vector<std::string>> &columns)
 {
     auto cols = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
-   
+
     std::for_each(columns.get()->begin(), columns.get()->end(),
         [&cols](std::string &col)
         {
@@ -148,42 +144,58 @@ void Table::intermediate(std::vector<std::shared_ptr<std::vector<size_t>>> &widt
     if (index >= width_for.size() - 1)
         return;
 
-    size_t col_n = width_for.at(index).get()->size();
-    size_t below_col_n = width_for.at(index + 1).get()->size();
+    size_t upper_index = index;
+    size_t below_index = index + 1;
+
+    size_t upper_col_n = width_for.at(upper_index).get()->size();
+    size_t below_col_n = width_for.at(below_index).get()->size();
+
+    if (upper_col_n == below_col_n)
+        return;
+
+    auto upper_vert = std::vector<bool>();
+    upper_vert.push_back(true);
+
+    std::for_each(
+        width_for.at(upper_index).get()->begin(),
+        width_for.at(upper_index).get()->end(),
+        [&upper_vert](size_t width)
+    {
+        for (int i = 0; i < width; i++)
+            upper_vert.push_back(false);
+
+        upper_vert.push_back(true);
+    });
+
+    auto below_vert = std::vector<bool>();
+    below_vert.push_back(true);
+
+    std::for_each(
+        width_for.at(below_index).get()->begin(),
+        width_for.at(below_index).get()->end(),
+        [&below_vert](size_t width)
+    {
+        for (int i = 0; i < width; i++)
+            below_vert.push_back(false);
+
+        below_vert.push_back(true);
+    });
+
+    std::cout << LTEE;
 
     auto tee = CROSS;
 
-    if (below_col_n > col_n)
+    for (int c = 1; c < upper_vert.size() - 1; c++)
     {
-        tee = TTEE;
-        index += 1;
-    }
-    else if (below_col_n < col_n)
-    {
-        tee = BTEE;
-    }
-    else
-    {
-        return;
+        tee =  upper_vert[c] &&  below_vert[c] ? CROSS
+            :  upper_vert[c] && !below_vert[c] ? BTEE
+            : !upper_vert[c] &&  below_vert[c] ? TTEE
+            :                                    HORZ;
+
+        std::cout << tee;
     }
 
-    auto left = LTEE;
-    auto right = RTEE;
-
-    std::for_each(
-        width_for.at(index).get()->begin(),
-        width_for.at(index).get()->end(),
-        [&left, &tee](size_t width)
-    {
-        std::cout << left;
-
-        for (size_t i = 0; i < width; i++)
-            std::cout << HORZ;
-
-        left = tee;
-    });
-
-    std::cout << right
+    std::cout << RTEE
               << std::endl;
 }
 
@@ -193,18 +205,15 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
 
     size_t row_n = 0,
            col_n = 0,
-           max_col_n = 0,
+           max_col_count = 0,
            row_width = 0,
            max_row_width = 0;
 
     std::for_each(
         rows.begin(),
         rows.end(),
-        [&row_n, &col_n, &max_col_n, &row_width, &max_row_width, &width_for](auto &cols)
+        [&row_n, &col_n, &max_col_count, &row_width, &max_row_width, &width_for](auto &cols)
     {
-        max_col_n = std::max(col_n, max_col_n);
-        max_row_width = std::max(row_width, max_row_width);
-
         col_n = 0;
         row_width = 0;
 
@@ -252,13 +261,17 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
             col_n++;
         });
 
+        max_col_count = std::max(widths.get()->size(), max_col_count);
+
         width_for.push_back(widths);
+
+        max_row_width = std::max(row_width, max_row_width);
 
         row_n++;
     });
 
     max_row_width = std::max(
-        max_row_width + (1 + max_col_n), // plus vertical bar chars
+        max_row_width + (1 + max_col_count), // plus vertical bar chars
         minimum_table_width
     );
 
