@@ -1,7 +1,4 @@
 #include <vector>
-#include <istream>
-#include <fstream>
-#include <iostream>
 #include <boost/filesystem.hpp>
 #include <boost/tokenizer.hpp>
 #include "table.hpp"
@@ -22,9 +19,17 @@ void build_table(std::istream &data_ifs)
         tokenizer tokens{line};
 
         auto cols = std::shared_ptr<std::vector<std::string>>(new std::vector<std::string>());
-        for (const auto &token : tokens)
+
+        if (tokens.begin() == tokens.end())
         {
-            cols.get()->push_back(token);
+            cols.get()->push_back("");
+        }
+        else
+        {
+            for (const auto &token : tokens)
+            {
+                cols.get()->push_back(token);
+            }
         }
 
         data.add_row(cols);
