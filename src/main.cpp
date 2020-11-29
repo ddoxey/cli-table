@@ -35,7 +35,7 @@ void build_table(std::istream &data_ifs)
         data.add_row(cols);
     }
 
-    data.render();
+    std::cout << data << std::endl;
 }
 
 

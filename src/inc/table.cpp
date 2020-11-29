@@ -57,89 +57,34 @@ void Table::add_row(const std::shared_ptr<std::vector<std::string>> &columns)
     rows.push_back(cols);
 }
 
-void Table::render() const
+void Table::horizontal(std::ostream &out, std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const
 {
-    size_t row_n = 0, col_n = 0;
-
-    auto width_for = compute_widths_();
-
-    horizontal(width_for, 0);
-
-    std::for_each(
-        rows.begin(),
-        rows.end(),
-        [&row_n, &col_n, &width_for, this](auto &cols)
-    {
-        col_n = 0;
-
-        std::for_each(
-            cols.get()->begin(),
-            cols.get()->end(),
-            [&row_n, &col_n, &width_for](auto &col)
-        {
-            size_t col_count = width_for.at(row_n).get()->size();
-            size_t width = width_for.at(row_n).get()->at(col_n);
-
-            std::string pad_left(" ");
-            std::string pad_right(" ");
-
-            if (col_count == 1)
-            {
-                size_t left_size = std::ceil((width - col.get()->length()) / 2);
-                size_t right_size = left_size + (col.get()->length() % 2 ? 0 : 1);
-                pad_left.resize(left_size);
-                std::fill(pad_left.begin(), pad_left.end(), ' ');
-                pad_right.resize(right_size);
-                std::fill(pad_right.begin(), pad_right.end(), ' ');
-            }
-            else
-            {
-                size_t right_size = width - ( 1 + col.get()->length() );
-                pad_right.resize(right_size);
-                std::fill(pad_right.begin(), pad_right.end(), ' ');
-            }
-
-            std::cout << VERT << pad_left << *col.get() << pad_right;
-
-            col_n++;
-        });
-
-        std::cout << VERT << std::endl;
-
-        this->intermediate(width_for, row_n);
-
-        row_n++;
-    });
-
-    horizontal(width_for, -1);
-}
-
-void Table::horizontal(std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const
-{
-    auto left = index == 0 ? TLEFT : BLEFT;
+    auto left  = index == 0 ? TLEFT  : BLEFT;
     auto right = index == 0 ? TRIGHT : BRIGHT;
-    auto tee = index == 0 ? TTEE : BTEE;
+    auto tee   = index == 0 ? TTEE   : BTEE;
 
     index = index == 0 ? index : width_for.size() - 1;
 
     std::for_each(
         width_for.at(index).get()->begin(),
         width_for.at(index).get()->end(),
-        [&left, &tee](size_t width)
+        [&out, &left, &tee](size_t width)
     {
-        std::cout << left;
+        out << left;
 
         for (size_t i = 0; i < width; i++)
-            std::cout << HORZ;
+            out << HORZ;
 
         left = tee;
     });
 
-    std::cout << right
-              << std::endl;
+    out << right;
+
+    if (index == 0)
+        out << std::endl;
 }
 
-void Table::intermediate(std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const
+void Table::intermediate(std::ostream &out, std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const
 {
     if (index >= width_for.size() - 1)
         return;
@@ -181,7 +126,7 @@ void Table::intermediate(std::vector<std::shared_ptr<std::vector<size_t>>> &widt
         below_vert.push_back(true);
     });
 
-    std::cout << LTEE;
+    out << LTEE;
 
     auto tee = CROSS;
 
@@ -192,11 +137,11 @@ void Table::intermediate(std::vector<std::shared_ptr<std::vector<size_t>>> &widt
             : !upper_vert[c] &&  below_vert[c] ? TTEE
             :                                    HORZ;
 
-        std::cout << tee;
+        out << tee;
     }
 
-    std::cout << RTEE
-              << std::endl;
+    out << RTEE
+        << std::endl;
 }
 
 std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
@@ -294,4 +239,68 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
     });
 
     return width_for;
+}
+
+std::ostream& Table::render(std::ostream &out) const
+{
+    size_t row_n = 0, col_n = 0;
+
+    auto width_for = compute_widths_();
+
+    horizontal(out, width_for, 0);
+
+    std::for_each(
+        rows.begin(),
+        rows.end(),
+        [&out, &row_n, &col_n, &width_for, this](auto &cols)
+    {
+        col_n = 0;
+
+        std::for_each(
+            cols.get()->begin(),
+            cols.get()->end(),
+            [&out, &row_n, &col_n, &width_for](auto &col)
+        {
+            size_t col_count = width_for.at(row_n).get()->size();
+            size_t width = width_for.at(row_n).get()->at(col_n);
+
+            std::string pad_left(" ");
+            std::string pad_right(" ");
+
+            if (col_count == 1)
+            {
+                size_t left_size = std::ceil((width - col.get()->length()) / 2);
+                size_t right_size = left_size + (col.get()->length() % 2 ? 0 : 1);
+                pad_left.resize(left_size);
+                std::fill(pad_left.begin(), pad_left.end(), ' ');
+                pad_right.resize(right_size);
+                std::fill(pad_right.begin(), pad_right.end(), ' ');
+            }
+            else
+            {
+                size_t right_size = width - ( 1 + col.get()->length() );
+                pad_right.resize(right_size);
+                std::fill(pad_right.begin(), pad_right.end(), ' ');
+            }
+
+            out << VERT << pad_left << *col.get() << pad_right;
+
+            col_n++;
+        });
+
+        out << VERT << std::endl;
+
+        this->intermediate(out, width_for, row_n);
+
+        row_n++;
+    });
+
+    horizontal(out, width_for, -1);
+
+    return out;
+}
+
+std::ostream& operator << (std::ostream &out, const Table &t)
+{
+    return t.render(out);
 }
