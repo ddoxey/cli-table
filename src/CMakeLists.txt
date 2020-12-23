@@ -16,7 +16,7 @@ include_directories(
     inc
 )
 
-find_package(Boost 1.67 REQUIRED COMPONENTS thread filesystem program_options)
+find_package(Boost 1.67 REQUIRED COMPONENTS thread)
 
 add_library(tablib table.cpp inc/table/cell.cpp)
 
@@ -24,9 +24,6 @@ add_executable(table main.cpp inc/table.hpp)
 
 target_link_libraries(table
     tablib 
-    Boost::system
-    Boost::filesystem
-    Boost::program_options
 )
 
 add_executable(test_table test/test_table.cpp)
@@ -35,7 +32,4 @@ target_link_libraries(test_table
     tablib 
     gtest
     Boost::thread
-    Boost::system
-    Boost::filesystem
-    Boost::program_options
 )
