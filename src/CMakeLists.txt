@@ -11,7 +11,9 @@ set(EXECUTABLE_OUTPUT_PATH "bin")
 set(LIBRARY_OUTPUT_PATH "lib")
 
 include_directories(
+    /usr/local/src/googletest/googletest/include
     /usr/src/googletest/googletest/include
+    /usr/local/include
     /usr/include
     inc
 )
