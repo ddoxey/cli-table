@@ -46,9 +46,18 @@ function main()
         echo "cmake not installed" >&2 && return 1
     fi
 
-    if ! find /usr -type f -name 'tokenizer.hpp' 2>/dev/null
+    local tokenizer_hpp=$(find /usr -type f -name 'tokenizer.hpp' 2>/dev/null | grep 'boost.tokenizer')
+
+    if [[ -z $tokenizer_hpp ]]
     then
         echo "boost/tokenizer.hpp not found" >&2 && return 1
+    fi
+
+    local gtest_h=$(find /usr -type f -name 'gtest.h' 2>/dev/null | grep 'gtest.gtest')
+
+    if [[ -z $gtest_h ]]
+    then
+        echo "gtest/gtest.h not found" >&2 && return 1
     fi
 
     build "$@"
