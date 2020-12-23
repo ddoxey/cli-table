@@ -1,6 +1,14 @@
 # cli-table
 Formatted tables on the CLI
 
+# Build
+
+./build.sh
+
+# Test
+
+./build/bin/test_table
+
 # USAGE:
 
 Given some file data.csv, such that:

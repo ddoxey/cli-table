@@ -1,6 +1,7 @@
 #include <cmath>
 #include <numeric>
 #include <algorithm>
+#include <boost/tokenizer.hpp>
 #include "table.hpp"
 
 #define MIN_PADDING 2
@@ -17,23 +18,73 @@
 #define RTEE LIGHT_VERTICAL_AND_LEFT
 
 
-Table::Table() {}
+Table::Table()
+{
+    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>>();
+}
 
-Table::Table(size_t width)
+Table::Table(const size_t width)
     : minimum_table_width(width)
-    {}
+{
+    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>>();
+}
 
-Table::Table(std::string title, size_t width)
+Table::Table(const std::string &title, const size_t width)
     : minimum_table_width(width)
 {
     rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>>();
     add_header(title);
 }
 
-Table::Table(std::string title)
+Table::Table(const std::string &title)
 {
     rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>>();
     add_header(title);
+}
+
+Table::Table(std::istream &ifs)
+{
+    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>>();
+
+    using tokenizer = boost::tokenizer<boost::escaped_list_separator<char>>;
+
+    std::string line;
+
+    while (std::getline(ifs, line))
+    {
+        tokenizer tokens{line};
+
+        auto cols = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
+
+        if (tokens.begin() == tokens.end())
+        {
+            cols.get()->push_back(std::shared_ptr<Cell>(new Cell("")));
+        }
+        else
+        {
+            for (const auto &token : tokens)
+            {
+                cols.get()->push_back(std::shared_ptr<Cell>(new Cell(token)));
+            }
+        }
+
+        rows.push_back(cols);
+    }
+}
+
+void Table::operator << (const std::string &text)
+{
+    if (text == "\n" || rows.size() == 0)
+    {
+        auto cols = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
+
+        rows.push_back(cols);
+
+        if (text == "\n")
+            return;
+    }
+
+    rows.back().get()->push_back(std::shared_ptr<Cell>(new Cell(text)));
 }
 
 void Table::add_header(const std::string &title)
@@ -78,10 +129,8 @@ void Table::horizontal(std::ostream &out, std::vector<std::shared_ptr<std::vecto
         left = tee;
     });
 
-    out << right;
-
-    if (index == 0)
-        out << std::endl;
+    out << right
+        << std::endl;
 }
 
 void Table::intermediate(std::ostream &out, std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const
@@ -106,7 +155,7 @@ void Table::intermediate(std::ostream &out, std::vector<std::shared_ptr<std::vec
         width_for.at(upper_index).get()->end(),
         [&upper_vert](size_t width)
     {
-        for (int i = 0; i < width; i++)
+        for (size_t i = 0; i < width; i++)
             upper_vert.push_back(false);
 
         upper_vert.push_back(true);
@@ -120,7 +169,7 @@ void Table::intermediate(std::ostream &out, std::vector<std::shared_ptr<std::vec
         width_for.at(below_index).get()->end(),
         [&below_vert](size_t width)
     {
-        for (int i = 0; i < width; i++)
+        for (size_t i = 0; i < width; i++)
             below_vert.push_back(false);
 
         below_vert.push_back(true);
@@ -130,7 +179,7 @@ void Table::intermediate(std::ostream &out, std::vector<std::shared_ptr<std::vec
 
     auto tee = CROSS;
 
-    for (int c = 1; c < upper_vert.size() - 1; c++)
+    for (size_t c = 1; c < upper_vert.size() - 1; c++)
     {
         tee =  upper_vert[c] &&  below_vert[c] ? CROSS
             :  upper_vert[c] && !below_vert[c] ? BTEE
@@ -243,6 +292,9 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
 
 std::ostream& Table::render(std::ostream &out) const
 {
+    if (rows.size() == 0)
+        return out;
+
     size_t row_n = 0, col_n = 0;
 
     auto width_for = compute_widths_();

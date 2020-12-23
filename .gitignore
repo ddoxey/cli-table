@@ -1,5 +1,5 @@
 **/CMakeFiles/*
-src/build/*
+build/*
 var/*
 .*.swp
 CMakeCache.txt

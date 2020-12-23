@@ -1,6 +1,5 @@
 #include <vector>
 #include <boost/filesystem.hpp>
-#include <boost/tokenizer.hpp>
 #include "table.hpp"
 
 namespace fs = boost::filesystem;
@@ -8,34 +7,9 @@ namespace fs = boost::filesystem;
 
 void build_table(std::istream &data_ifs)
 {
-    using tokenizer = boost::tokenizer<boost::escaped_list_separator<char>>;
+    Table data = Table(data_ifs);
 
-    Table data = Table();
-
-    std::string line;
-
-    while (std::getline(data_ifs, line))
-    {
-        tokenizer tokens{line};
-
-        auto cols = std::shared_ptr<std::vector<std::string>>(new std::vector<std::string>());
-
-        if (tokens.begin() == tokens.end())
-        {
-            cols.get()->push_back("");
-        }
-        else
-        {
-            for (const auto &token : tokens)
-            {
-                cols.get()->push_back(token);
-            }
-        }
-
-        data.add_row(cols);
-    }
-
-    std::cout << data << std::endl;
+    std::cout << data;
 }
 
 

@@ -13,13 +13,15 @@ class Table
 public:
 
     Table();
-    Table(size_t width);
-    Table(std::string title);
-    Table(std::string title, size_t width);
+    Table(const size_t width);
+    Table(const std::string &title);
+    Table(const std::string &title, const size_t width);
+    Table(std::istream &ifs);
 
     void add_header(const std::string &title);
     void add_row(const std::shared_ptr<std::vector<std::string>> &cols);
     std::ostream& render(std::ostream &out) const;
+    void operator << (const std::string &text);
 
 private:
     size_t minimum_table_width = 0;
