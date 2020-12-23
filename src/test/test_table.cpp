@@ -1,8 +1,5 @@
-#include <boost/filesystem.hpp>
 #include "gtest/gtest.h"
 #include "table.hpp"
-
-namespace fs = boost::filesystem;
 
 
 class TableTest : public ::testing::Test

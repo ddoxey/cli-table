@@ -25,7 +25,7 @@ function build()
         rm bin/* 2>/dev/null
         rm lib/* 2>/dev/null
         rm -rf Makefile CMakeCache.txt CMakeFiles cmake_install.cmake
-    
+
         echo "-- Build files have been purged from: $(pwd)"
 
         return 0
@@ -46,9 +46,9 @@ function main()
         echo "cmake not installed" >&2 && return 1
     fi
 
-    if ! apt list --installed 2>/dev/null | grep -q 'libboost1[.]67[-]'
+    if ! find /usr -type f -name 'tokenizer.hpp' 2>/dev/null
     then
-        echo "libboost1.67 not installed" >&2 && return 1
+        echo "boost/tokenizer.hpp not found" >&2 && return 1
     fi
 
     build "$@"
