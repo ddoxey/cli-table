@@ -1,24 +1,41 @@
 cmake_minimum_required(VERSION 3.5.1)
 
-set(CMAKE_VERBOSE_MAKEFILE off)
+set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 set(CMAKE_CXX_STANDARD 14)
-add_compile_options(-Wfatal-errors)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 project(cli-table)
 
-include_directories(
-    inc
-    /usr/local/boost_1_62_0
-)
-link_directories(/usr/local/boost_1_62_0/stage/lib)
+set(EXECUTABLE_OUTPUT_PATH "bin")
+set(LIBRARY_OUTPUT_PATH "lib")
 
-add_library(tablib inc/table.cpp inc/table/cell.cpp)
+include_directories(
+    /usr/src/googletest/googletest/include
+    /usr/include
+    inc
+)
+
+find_package(Boost 1.67 REQUIRED COMPONENTS thread filesystem program_options)
+
+add_library(tablib table.cpp inc/table/cell.cpp)
 
 add_executable(table main.cpp inc/table.hpp)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 target_link_libraries(table
     tablib 
-    boost_filesystem
-    boost_system
-    boost_program_options
+    Boost::system
+    Boost::filesystem
+    Boost::program_options
+)
+
+add_executable(test_table test/test_table.cpp)
+
+target_link_libraries(test_table
+    tablib 
+    gtest
+    Boost::thread
+    Boost::system
+    Boost::filesystem
+    Boost::program_options
 )
