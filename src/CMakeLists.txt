@@ -7,6 +7,7 @@ add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 project(cli-table)
 
+set(CMAKE_INSTALL_PREFIX "/usr/local/")
 set(EXECUTABLE_OUTPUT_PATH "bin")
 set(LIBRARY_OUTPUT_PATH "lib")
 
@@ -34,4 +35,35 @@ target_link_libraries(test_table
     tablib 
     gtest
     Boost::thread
+)
+
+install(
+    TARGETS table RUNTIME
+    DESTINATION bin/
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                GROUP_READ GROUP_EXECUTE
+                WORLD_READ WORLD_EXECUTE
+)
+
+install(
+    TARGETS tablib LIBRARY 
+    DESTINATION lib/
+    PERMISSIONS OWNER_READ OWNER_WRITE
+                GROUP_READ
+                WORLD_READ
+)
+
+install(FILES inc/table.hpp
+              inc/boxchars.hpp
+        DESTINATION include/cli-table/
+        PERMISSIONS OWNER_READ OWNER_WRITE
+                    GROUP_READ
+                    WORLD_READ
+)
+
+install(FILES inc/table/cell.hpp
+        DESTINATION include/cli-table/table/
+        PERMISSIONS OWNER_READ OWNER_WRITE
+                    GROUP_READ
+                    WORLD_READ
 )
