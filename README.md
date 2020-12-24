@@ -9,6 +9,10 @@ Formatted tables on the CLI
 
 ./build/bin/test_table
 
+# Install
+
+cd build && sudo make install
+
 # USAGE:
 
 Given some file data.csv, such that:
