@@ -54,7 +54,6 @@ TEST_F(TableTest, TitleConstructor)
 TEST_F(TableTest, TitleOneTwoThree)
 {
     Table table("title");
-    table << "\n";
     table << "a";
     table << "\n";
     table << "b";
@@ -111,7 +110,6 @@ TEST_F(TableTest, VariousTypes)
     char                   bd = '.';
 
     Table table("title");
-    table << "\n";
     table << aa << ab << ac << ad << ae << af << "\n";
     table << ag << ah << ai << aj << ak << al << "\n";
     table << am << an << ao << ap << aq << ar << "\n";
@@ -136,7 +134,6 @@ TEST_F(TableTest, VariousTypes)
 TEST_F(TableTest, StressColumnAutosizing)
 {
     Table table("title");
-    table << "\n";
     table << '.' << '.' << "\n";
     table << '.' << '.' << '.' << "\n";
     table << '.' << '.' << '.' << '.' << "\n";
