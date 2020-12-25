@@ -226,6 +226,23 @@ TEST_F(TableTest, ConfigurableCellAlignment)
     EXPECT_EQ(result.str(), expect.str());
 }
 
+TEST_F(TableTest, SGRColor)
+{
+    Table table("title");
+    table << "{\"sgr\": [31, 1], \"text\": \"a\"}";
+    table << "{\"sgr\": [42, 1], \"text\": \"b\"}";
+    table << "{\"sgr\": 32, \"text\": \"c\"}";
+    std::stringstream result;
+    result << table;
+    std::stringstream expect;
+    expect << "┌───────────┐\n"
+           << "│   title   │\n"
+           << "├───┬───┬───┤\n"
+           << "│\x1B[31;1m a \x1B[0m│\x1B[42;1m b \x1B[0m│\x1B[32m c \x1B[0m│\n"
+           << "└───┴───┴───┘\n";
+    EXPECT_EQ(result.str(), expect.str());
+}
+
 
 
 int main(int argc, char **argv)
