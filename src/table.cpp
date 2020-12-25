@@ -233,6 +233,7 @@ std::ostream& Table::render(std::ostream &out) const
             [&out, &row_n, &col_n, &width_for, &col_count](auto &col)
         {
             Align align = col.get()->alignment();
+            auto sgr = col.get()->sgr_codes();
             size_t width = width_for.at(row_n).get()->at(col_n);
             size_t actual_width = col.get()->length();
             size_t width_diff = width - actual_width;
@@ -269,7 +270,12 @@ std::ostream& Table::render(std::ostream &out) const
                 std::fill(pad_left.begin(), pad_left.end(), ' ');
             }
 
-            out << VERT << pad_left << *col.get() << pad_right;
+            out << VERT
+                << std::get<0>(sgr)
+                << pad_left
+                << *col.get()
+                << pad_right
+                << std::get<1>(sgr);
 
             col_n++;
         });
@@ -406,6 +412,21 @@ Table::Cell::Cell(const std::string &data)
                   :                         automatic;
         }
 
+        if (config.count("sgr") != 0)
+        {
+            if (config["sgr"].is_array())
+            {
+                for (const auto &code : config["sgr"])
+                {
+                    sgr.push_back(code.get<size_t>());
+                }
+            }
+            else
+            {
+                sgr.push_back(config["sgr"].get<size_t>());
+            }
+        }
+
         if (config.count("text") != 0)
         {
             text = config["text"].get<std::string>();
@@ -425,6 +446,36 @@ size_t Table::Cell::length() const
 Align Table::Cell::alignment() const
 {
     return align;
+}
+
+std::pair<std::string, std::string> Table::Cell::sgr_codes() const
+{
+    std::pair<std::string, std::string> codes;
+
+    if (sgr.size() > 0)
+    {
+        std::string semicolon("");
+        std::stringstream esc_seq;
+
+        esc_seq << "\033[";
+
+        for (const auto &code : sgr)
+        {
+            esc_seq << semicolon << code;
+
+            semicolon = ";";
+        }
+
+        esc_seq << "m";
+
+        codes = std::make_pair(esc_seq.str(), "\033[0m");
+    }
+    else
+    {
+        codes = std::make_pair("", "");
+    }
+
+    return codes;
 }
 
 std::ostream& Table::Cell::str(std::ostream &out) const

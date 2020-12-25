@@ -165,11 +165,13 @@ public:
         Cell() = delete;
         Cell(const std::string &text);
 
-        Align alignment() const;
         size_t length() const;
+        Align alignment() const;
+        std::pair<std::string, std::string> sgr_codes() const;
         std::ostream& str(std::ostream &out) const;
 
     private:
+        std::vector<size_t> sgr;
         Align align = automatic;
         std::string text;
         size_t size;
