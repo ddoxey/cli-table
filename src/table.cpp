@@ -74,9 +74,12 @@ Table::Table(std::istream &ifs)
 
 void Table::add_header(const std::string &title)
 {
-    auto cols = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
-    cols.get()->push_back(std::shared_ptr<Cell>(new Cell(title)));
-    rows.push_back(cols);
+    auto header = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
+    header.get()->push_back(std::shared_ptr<Cell>(new Cell(title)));
+    rows.push_back(header);
+
+    auto next_row = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
+    rows.push_back(next_row);
 }
 
 void Table::add_row(const std::shared_ptr<std::vector<std::string>> &columns)
@@ -213,6 +216,9 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
 
         auto widths = std::shared_ptr<std::vector<size_t>>(new std::vector<size_t>());
 
+        if (cols.get()->begin() ==  cols.get()->end())
+            return;
+
         std::for_each(
             cols.get()->begin(),
             cols.get()->end(),
@@ -306,6 +312,9 @@ std::ostream& Table::render(std::ostream &out) const
         rows.end(),
         [&out, &row_n, &col_n, &width_for, this](auto &cols)
     {
+        if (cols.get()->begin() ==  cols.get()->end())
+            return;
+
         col_n = 0;
 
         std::for_each(
