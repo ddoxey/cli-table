@@ -226,6 +226,7 @@ std::ostream& Table::render(std::ostream &out) const
         {
             size_t width = width_for.at(row_n).get()->at(col_n);
             size_t actual_width = col.get()->length();
+            size_t width_diff = width - actual_width;
 
             std::string pad_left(" ");
             std::string pad_right(" ");
@@ -233,8 +234,8 @@ std::ostream& Table::render(std::ostream &out) const
             // centered
             if (col_count == 1)
             {
-                size_t left_size = (width - actual_width) / 2;
-                size_t right_size = left_size + (width % 2 ? 0 : 1);
+                size_t left_size = width_diff / 2;
+                size_t right_size = left_size + (width_diff % 2 ? 1 : 0);
 
                 pad_left.resize(left_size);
                 std::fill(pad_left.begin(), pad_left.end(), ' ');

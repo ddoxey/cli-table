@@ -177,7 +177,7 @@ TEST_F(TableTest, StressColumnAutosizing)
     EXPECT_EQ(result.str(), expect.str());
 }
 
-TEST_F(TableTest, AlignmentIssues)
+TEST_F(TableTest, AlignmentIssuesA)
 {
     Table table("title");
     table << "a:";
@@ -187,6 +187,22 @@ TEST_F(TableTest, AlignmentIssues)
     std::stringstream expect;
     expect << "┌────────┐\n"
            << "│ title  │\n"
+           << "├────┬───┤\n"
+           << "│ a: │ b │\n"
+           << "└────┴───┘\n";
+    EXPECT_EQ(result.str(), expect.str());
+}
+
+TEST_F(TableTest, AlignmentIssuesB)
+{
+    Table table("title:");
+    table << "a:";
+    table << "b";
+    std::stringstream result;
+    result << table;
+    std::stringstream expect;
+    expect << "┌────────┐\n"
+           << "│ title: │\n"
            << "├────┬───┤\n"
            << "│ a: │ b │\n"
            << "└────┴───┘\n";
