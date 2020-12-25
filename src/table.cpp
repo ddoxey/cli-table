@@ -72,21 +72,6 @@ Table::Table(std::istream &ifs)
     }
 }
 
-void Table::operator << (const std::string &text)
-{
-    if (text == "\n" || rows.size() == 0)
-    {
-        auto cols = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
-
-        rows.push_back(cols);
-
-        if (text == "\n")
-            return;
-    }
-
-    rows.back().get()->push_back(std::shared_ptr<Cell>(new Cell(text)));
-}
-
 void Table::add_header(const std::string &title)
 {
     auto cols = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
@@ -106,6 +91,21 @@ void Table::add_row(const std::shared_ptr<std::vector<std::string>> &columns)
     );
 
     rows.push_back(cols);
+}
+
+void Table::add_col(const std::string &column)
+{
+    if (column == "\n" || rows.size() == 0)
+    {
+        auto cols = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
+
+        rows.push_back(cols);
+
+        if (column == "\n")
+            return;
+    }
+
+    rows.back().get()->push_back(std::shared_ptr<Cell>(new Cell(column)));
 }
 
 void Table::horizontal(std::ostream &out, std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const

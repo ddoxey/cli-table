@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <sstream>
 #include "table/cell.hpp"
 #include "boxchars.hpp"
 
@@ -20,8 +21,17 @@ public:
 
     void add_header(const std::string &title);
     void add_row(const std::shared_ptr<std::vector<std::string>> &cols);
+    void add_col(const std::string &col);
     std::ostream& render(std::ostream &out) const;
-    void operator << (const std::string &text);
+
+    template<typename T>
+    Table& operator << (T const &value)
+    {
+        std::stringstream text;
+        text << value;
+        add_col(text.str());
+        return *this;
+    }
 
 private:
     size_t minimum_table_width = 0;
@@ -29,7 +39,7 @@ private:
 
     void horizontal(std::ostream &out, std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const;
     void intermediate(std::ostream &out, std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const;
-    
+
     std::vector<std::shared_ptr<std::vector<size_t>>> compute_widths_() const;
     void debug_widths_(std::vector<std::shared_ptr<std::vector<size_t>>> &width_for) const;
 };
