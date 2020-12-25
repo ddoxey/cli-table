@@ -2,7 +2,9 @@
 #include <numeric>
 #include <algorithm>
 #include <boost/tokenizer.hpp>
+#include <nlohmann/json.hpp>
 #include "table.hpp"
+
 
 #define MIN_PADDING 2
 #define HORZ LIGHT_HORIZONTAL
@@ -16,6 +18,8 @@
 #define CROSS LIGHT_VERTICAL_AND_HORIZONTAL
 #define LTEE LIGHT_VERTICAL_AND_RIGHT
 #define RTEE LIGHT_VERTICAL_AND_LEFT
+
+using json = nlohmann::json;
 
 
 Table::Table()
@@ -228,15 +232,26 @@ std::ostream& Table::render(std::ostream &out) const
             cols.get()->end(),
             [&out, &row_n, &col_n, &width_for, &col_count](auto &col)
         {
+            Align align = col.get()->alignment();
             size_t width = width_for.at(row_n).get()->at(col_n);
             size_t actual_width = col.get()->length();
             size_t width_diff = width - actual_width;
 
+            if (align == automatic)
+            {
+                align = col_count == 1 ? center : left;
+            }
+
             std::string pad_left(" ");
             std::string pad_right(" ");
 
-            // centered
-            if (col_count == 1)
+            if (align == left)
+            {
+                size_t right_size = width - ( 1 + actual_width );
+                pad_right.resize(right_size);
+                std::fill(pad_right.begin(), pad_right.end(), ' ');
+            }
+            else if (align == center)
             {
                 size_t left_size = width_diff / 2;
                 size_t right_size = left_size + (width_diff % 2 ? 1 : 0);
@@ -247,12 +262,11 @@ std::ostream& Table::render(std::ostream &out) const
                 pad_right.resize(right_size);
                 std::fill(pad_right.begin(), pad_right.end(), ' ');
             }
-            // left justified
-            else
+            else if (align == right)
             {
-                size_t right_size = width - ( 1 + actual_width );
-                pad_right.resize(right_size);
-                std::fill(pad_right.begin(), pad_right.end(), ' ');
+                size_t left_size = width - ( 1 + actual_width );
+                pad_left.resize(left_size);
+                std::fill(pad_left.begin(), pad_left.end(), ' ');
             }
 
             out << VERT << pad_left << *col.get() << pad_right;
@@ -376,14 +390,41 @@ std::ostream& operator << (std::ostream &out, const Table &t)
     return t.render(out);
 }
 
-Table::Cell::Cell(const std::string &text)
-    : text(text),
-      size(text.size())
-    {}
+Table::Cell::Cell(const std::string &data)
+{
+    if (data.size() > 0 && data[0] == '{' && data[data.size()-1] == '}')
+    {
+        json config = json::parse(data);
+
+        if (config.count("align") != 0)
+        {
+            auto alignment = config["align"].get<std::string>();
+
+            align = alignment == "left"   ? left
+                  : alignment == "center" ? center
+                  : alignment == "right"  ? right
+                  :                         automatic;
+        }
+
+        if (config.count("text") != 0)
+        {
+            text = config["text"].get<std::string>();
+        }
+    }
+    else
+    {
+        text = data;
+    }
+}
 
 size_t Table::Cell::length() const
 {
-    return size;
+    return text.length();
+}
+
+Align Table::Cell::alignment() const
+{
+    return align;
 }
 
 std::ostream& Table::Cell::str(std::ostream &out) const

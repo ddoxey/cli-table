@@ -152,6 +152,8 @@
 #define LIGHT_DIAGONAL_DIAMOND "\u1fbae"
 #define LIGHT_HORIZONTAL_WITH_VERTICAL_STROKE "\u1fbaf"
 
+enum Align { left, center, right, automatic };
+
 
 class Table
 {
@@ -163,10 +165,12 @@ public:
         Cell() = delete;
         Cell(const std::string &text);
 
+        Align alignment() const;
         size_t length() const;
         std::ostream& str(std::ostream &out) const;
 
     private:
+        Align align = automatic;
         std::string text;
         size_t size;
     };
