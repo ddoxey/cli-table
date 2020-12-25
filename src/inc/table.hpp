@@ -41,7 +41,6 @@ private:
     void intermediate(std::ostream &out, std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const;
 
     std::vector<std::shared_ptr<std::vector<size_t>>> compute_widths_() const;
-    void debug_widths_(std::vector<std::shared_ptr<std::vector<size_t>>> &width_for) const;
 };
 
 std::ostream& operator << (std::ostream &out, const Table &t);

@@ -196,6 +196,77 @@ void Table::intermediate(std::ostream &out, std::vector<std::shared_ptr<std::vec
         << std::endl;
 }
 
+std::ostream& Table::render(std::ostream &out) const
+{
+    if (rows.size() == 0)
+        return out;
+
+    size_t row_n = 0, col_n = 0;
+
+    auto width_for = compute_widths_();
+
+    horizontal(out, width_for, 0);
+
+    std::for_each(
+        rows.begin(),
+        rows.end(),
+        [&out, &row_n, &col_n, &width_for, this](auto &cols)
+    {
+        if (cols.get()->begin() ==  cols.get()->end())
+            return;
+
+        size_t col_count = width_for.at(row_n).get()->size();
+
+        col_n = 0;
+
+        std::for_each(
+            cols.get()->begin(),
+            cols.get()->end(),
+            [&out, &row_n, &col_n, &width_for, &col_count](auto &col)
+        {
+            size_t width = width_for.at(row_n).get()->at(col_n);
+            size_t actual_width = col.get()->length();
+
+            std::string pad_left(" ");
+            std::string pad_right(" ");
+
+            // centered
+            if (col_count == 1)
+            {
+                size_t left_size = (width - actual_width) / 2;
+                size_t right_size = left_size + (width % 2 ? 0 : 1);
+
+                pad_left.resize(left_size);
+                std::fill(pad_left.begin(), pad_left.end(), ' ');
+
+                pad_right.resize(right_size);
+                std::fill(pad_right.begin(), pad_right.end(), ' ');
+            }
+            // left justified
+            else
+            {
+                size_t right_size = width - ( 1 + actual_width );
+                pad_right.resize(right_size);
+                std::fill(pad_right.begin(), pad_right.end(), ' ');
+            }
+
+            out << VERT << pad_left << *col.get() << pad_right;
+
+            col_n++;
+        });
+
+        out << VERT << std::endl;
+
+        this->intermediate(out, width_for, row_n);
+
+        row_n++;
+    });
+
+    horizontal(out, width_for, -1);
+
+    return out;
+}
+
 std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
 {
     auto width_for = std::vector<std::shared_ptr<std::vector<size_t>>>();
@@ -261,19 +332,18 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
             col_n++;
         });
 
-        max_col_count = std::max(widths.get()->size(), max_col_count);
-
         width_for.push_back(widths);
 
-        max_row_width = std::max(row_width, max_row_width);
+        size_t col_count = widths.get()->size();
+        size_t markup_count = 1 + col_count;
+
+        max_col_count = std::max(col_count, max_col_count);
+        max_row_width = std::max(row_width + markup_count, max_row_width);
 
         row_n++;
     });
 
-    max_row_width = std::max(
-        max_row_width + (1 + max_col_count), // plus vertical bar chars
-        minimum_table_width
-    );
+    max_row_width = std::max(max_row_width, minimum_table_width);
 
     std::for_each(width_for.begin(), width_for.end(), [&max_row_width](auto &cols)
     {
@@ -294,71 +364,6 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
     });
 
     return width_for;
-}
-
-std::ostream& Table::render(std::ostream &out) const
-{
-    if (rows.size() == 0)
-        return out;
-
-    size_t row_n = 0, col_n = 0;
-
-    auto width_for = compute_widths_();
-
-    horizontal(out, width_for, 0);
-
-    std::for_each(
-        rows.begin(),
-        rows.end(),
-        [&out, &row_n, &col_n, &width_for, this](auto &cols)
-    {
-        if (cols.get()->begin() ==  cols.get()->end())
-            return;
-
-        col_n = 0;
-
-        std::for_each(
-            cols.get()->begin(),
-            cols.get()->end(),
-            [&out, &row_n, &col_n, &width_for](auto &col)
-        {
-            size_t col_count = width_for.at(row_n).get()->size();
-            size_t width = width_for.at(row_n).get()->at(col_n);
-
-            std::string pad_left(" ");
-            std::string pad_right(" ");
-
-            if (col_count == 1)
-            {
-                size_t left_size = std::ceil((width - col.get()->length()) / 2);
-                size_t right_size = left_size + (col.get()->length() % 2 ? 0 : 1);
-                pad_left.resize(left_size);
-                std::fill(pad_left.begin(), pad_left.end(), ' ');
-                pad_right.resize(right_size);
-                std::fill(pad_right.begin(), pad_right.end(), ' ');
-            }
-            else
-            {
-                size_t right_size = width - ( 1 + col.get()->length() );
-                pad_right.resize(right_size);
-                std::fill(pad_right.begin(), pad_right.end(), ' ');
-            }
-
-            out << VERT << pad_left << *col.get() << pad_right;
-
-            col_n++;
-        });
-
-        out << VERT << std::endl;
-
-        this->intermediate(out, width_for, row_n);
-
-        row_n++;
-    });
-
-    horizontal(out, width_for, -1);
-
-    return out;
 }
 
 std::ostream& operator << (std::ostream &out, const Table &t)
