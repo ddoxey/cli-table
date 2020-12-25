@@ -21,7 +21,7 @@ include_directories(
 
 find_package(Boost 1.67 REQUIRED COMPONENTS thread)
 
-add_library(tablib table.cpp inc/table/cell.cpp)
+add_library(tablib table.cpp)
 
 add_executable(table main.cpp inc/table.hpp)
 
@@ -54,15 +54,7 @@ install(
 )
 
 install(FILES inc/table.hpp
-              inc/boxchars.hpp
         DESTINATION include/cli-table/
-        PERMISSIONS OWNER_READ OWNER_WRITE
-                    GROUP_READ
-                    WORLD_READ
-)
-
-install(FILES inc/table/cell.hpp
-        DESTINATION include/cli-table/table/
         PERMISSIONS OWNER_READ OWNER_WRITE
                     GROUP_READ
                     WORLD_READ

@@ -209,6 +209,23 @@ TEST_F(TableTest, AlignmentIssuesB)
     EXPECT_EQ(result.str(), expect.str());
 }
 
+TEST_F(TableTest, ConfigurableCellAlignment)
+{
+    Table table("title", 50);
+    table << "{\"align\": \"left\", \"text\": \"<-a\"}";
+    table << "{\"align\": \"center\", \"text\": \"<-b->\"}";
+    table << "{\"align\": \"right\", \"text\": \"c->\"}";
+    std::stringstream result;
+    result << table;
+    std::stringstream expect;
+    expect << "┌────────────────────────────────────────────────┐\n"
+           << "│                     title                      │\n"
+           << "├───────────────┬─────────────────┬──────────────┤\n"
+           << "│ <-a           │      <-b->      │          c-> │\n"
+           << "└───────────────┴─────────────────┴──────────────┘\n";
+    EXPECT_EQ(result.str(), expect.str());
+}
+
 
 
 int main(int argc, char **argv)

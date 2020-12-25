@@ -2,7 +2,9 @@
 #include <numeric>
 #include <algorithm>
 #include <boost/tokenizer.hpp>
+#include <nlohmann/json.hpp>
 #include "table.hpp"
+
 
 #define MIN_PADDING 2
 #define HORZ LIGHT_HORIZONTAL
@@ -17,34 +19,36 @@
 #define LTEE LIGHT_VERTICAL_AND_RIGHT
 #define RTEE LIGHT_VERTICAL_AND_LEFT
 
+using json = nlohmann::json;
+
 
 Table::Table()
 {
-    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>>();
+    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>>();
 }
 
 Table::Table(const size_t width)
     : minimum_table_width(width)
 {
-    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>>();
+    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>>();
 }
 
 Table::Table(const std::string &title, const size_t width)
     : minimum_table_width(width)
 {
-    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>>();
+    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>>();
     add_header(title);
 }
 
 Table::Table(const std::string &title)
 {
-    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>>();
+    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>>();
     add_header(title);
 }
 
 Table::Table(std::istream &ifs)
 {
-    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>>();
+    rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>>();
 
     using tokenizer = boost::tokenizer<boost::escaped_list_separator<char>>;
 
@@ -54,17 +58,18 @@ Table::Table(std::istream &ifs)
     {
         tokenizer tokens{line};
 
-        auto cols = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
+        auto cols =
+        std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
 
         if (tokens.begin() == tokens.end())
         {
-            cols.get()->push_back(std::shared_ptr<Cell>(new Cell("")));
+            cols.get()->push_back(std::shared_ptr<Table::Cell>(new Table::Cell("")));
         }
         else
         {
             for (const auto &token : tokens)
             {
-                cols.get()->push_back(std::shared_ptr<Cell>(new Cell(token)));
+                cols.get()->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(token)));
             }
         }
 
@@ -74,22 +79,24 @@ Table::Table(std::istream &ifs)
 
 void Table::add_header(const std::string &title)
 {
-    auto header = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
-    header.get()->push_back(std::shared_ptr<Cell>(new Cell(title)));
+    auto header =
+    std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
+    header.get()->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(title)));
     rows.push_back(header);
 
-    auto next_row = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
+    auto next_row =
+    std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
     rows.push_back(next_row);
 }
 
 void Table::add_row(const std::shared_ptr<std::vector<std::string>> &columns)
 {
-    auto cols = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
+    auto cols = std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
 
     std::for_each(columns.get()->begin(), columns.get()->end(),
         [&cols](std::string &col)
         {
-            cols.get()->push_back(std::shared_ptr<Cell>(new Cell(col)));
+            cols.get()->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(col)));
         }
     );
 
@@ -100,7 +107,8 @@ void Table::add_col(const std::string &column)
 {
     if (column == "\n" || rows.size() == 0)
     {
-        auto cols = std::shared_ptr<std::vector<std::shared_ptr<Cell>>>(new std::vector<std::shared_ptr<Cell>>());
+        auto cols =
+        std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
 
         rows.push_back(cols);
 
@@ -108,7 +116,7 @@ void Table::add_col(const std::string &column)
             return;
     }
 
-    rows.back().get()->push_back(std::shared_ptr<Cell>(new Cell(column)));
+    rows.back().get()->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(column)));
 }
 
 void Table::horizontal(std::ostream &out, std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const
@@ -224,15 +232,26 @@ std::ostream& Table::render(std::ostream &out) const
             cols.get()->end(),
             [&out, &row_n, &col_n, &width_for, &col_count](auto &col)
         {
+            Align align = col.get()->alignment();
             size_t width = width_for.at(row_n).get()->at(col_n);
             size_t actual_width = col.get()->length();
             size_t width_diff = width - actual_width;
 
+            if (align == automatic)
+            {
+                align = col_count == 1 ? center : left;
+            }
+
             std::string pad_left(" ");
             std::string pad_right(" ");
 
-            // centered
-            if (col_count == 1)
+            if (align == left)
+            {
+                size_t right_size = width - ( 1 + actual_width );
+                pad_right.resize(right_size);
+                std::fill(pad_right.begin(), pad_right.end(), ' ');
+            }
+            else if (align == center)
             {
                 size_t left_size = width_diff / 2;
                 size_t right_size = left_size + (width_diff % 2 ? 1 : 0);
@@ -243,12 +262,11 @@ std::ostream& Table::render(std::ostream &out) const
                 pad_right.resize(right_size);
                 std::fill(pad_right.begin(), pad_right.end(), ' ');
             }
-            // left justified
-            else
+            else if (align == right)
             {
-                size_t right_size = width - ( 1 + actual_width );
-                pad_right.resize(right_size);
-                std::fill(pad_right.begin(), pad_right.end(), ' ');
+                size_t left_size = width - ( 1 + actual_width );
+                pad_left.resize(left_size);
+                std::fill(pad_left.begin(), pad_left.end(), ' ');
             }
 
             out << VERT << pad_left << *col.get() << pad_right;
@@ -370,4 +388,51 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
 std::ostream& operator << (std::ostream &out, const Table &t)
 {
     return t.render(out);
+}
+
+Table::Cell::Cell(const std::string &data)
+{
+    if (data.size() > 0 && data[0] == '{' && data[data.size()-1] == '}')
+    {
+        json config = json::parse(data);
+
+        if (config.count("align") != 0)
+        {
+            auto alignment = config["align"].get<std::string>();
+
+            align = alignment == "left"   ? left
+                  : alignment == "center" ? center
+                  : alignment == "right"  ? right
+                  :                         automatic;
+        }
+
+        if (config.count("text") != 0)
+        {
+            text = config["text"].get<std::string>();
+        }
+    }
+    else
+    {
+        text = data;
+    }
+}
+
+size_t Table::Cell::length() const
+{
+    return text.length();
+}
+
+Align Table::Cell::alignment() const
+{
+    return align;
+}
+
+std::ostream& Table::Cell::str(std::ostream &out) const
+{
+    return out << text;
+}
+
+std::ostream& operator << (std::ostream &out, const Table::Cell &c)
+{
+    return c.str(out);
 }
