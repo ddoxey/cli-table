@@ -1,4 +1,11 @@
 #!/bin/bash
+#
+# This script demonstrates some techniques for stylizing a
+# table of text with conditional application of SGR codes.
+#
+# Author: Dylan Doxey <dylan.doxey@gmail.com>
+# Date: 01/18/2021
+#
 
 NORMAL=0
 BOLD=1
@@ -20,7 +27,6 @@ function update_style()
     local atr=$4
     local bgc=$5
     local fgc=$6
-    local q='"'
     local c=','
 
     if [[ ! -s "$style" ]]
@@ -33,15 +39,16 @@ function update_style()
         return 0
     fi
 
-    echo -n "${c}{"                         >> "$style"
-    echo -n     "${q}where${q}:{"           >> "$style"
-    echo -n         "${q}row_n${q}:${row}," >> "$style"
-    echo -n         "${q}col_n${q}:${col}"  >> "$style"
-    echo -n     "},"                        >> "$style"
-    echo -n     "${q}sgr${q}:["             >> "$style"
-    echo -n         "${atr},${bgc},${fgc}"  >> "$style"
-    echo -n     "]"                         >> "$style"
-    echo -n "}"                             >> "$style"
+    cat << EOJ >> "$style"
+${c}
+    {
+        "where":{
+            "row_n":${row},
+            "col_n":${col}
+        },
+        "sgr":[${atr}, ${bgc}, ${fgc}]
+    }
+EOJ
 }
 
 function create_files()

@@ -1,48 +1,61 @@
 #!/bin/bash
+#
+# This script demonstrates some techniques for stylizing a
+# table of text with conditional application of SGR codes.
+#
+# Author: Dylan Doxey <dylan.doxey@gmail.com>
+# Date: 01/18/2021
+#
 
 TABLE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../build/bin/table"
 
 function flag()
 {
-    echo '*+*+*======'
-    echo '+*+*+wwwwww'
-    echo '*+*+*======'
-    echo '+*+*+wwwwww'
-    echo '*+*+*======'
-    echo 'wwwwwwwwwww'
-    echo '==========='
-    echo 'wwwwwwwwwww'
-    echo '==========='
+cat << EOF | sed -e 's/\(.\)/\1,/g' -e 's/,$//'
+* * *rrrrrr
+ * * wwwwww
+* * *rrrrrr
+ * * wwwwww
+* * *rrrrrr
+ * * wwwwww
+* * *rrrrrr
+wwwwwwwwwww
+rrrrrrrrrrr
+wwwwwwwwwww
+rrrrrrrrrrr
+wwwwwwwwwww
+rrrrrrrrrrr
+EOF
 }
 
 function red_white_blue()
 {
-    cat << EOJ
+cat << EOJ
 {
     "col": [
         {
             "where": {
                 "text": "*"
             },
-            "sgr": [1, 104, 97]
+            "sgr": [1, 97, 104]
         },
         {
             "where": {
-                "text": "+"
+                "text": " "
             },
-            "sgr": [7, 94, 104]
+            "sgr": [0, 94, 104]
         },
         {
             "where": {
-                "text": "="
+                "text": "r"
             },
-            "sgr": [7, 91, 101]
+            "sgr": [2, 91, 101]
         },
         {
             "where": {
                 "text": "w"
             },
-            "sgr": [2, 30, 97]
+            "sgr": [2, 97, 97]
         }
     ]
 }
@@ -56,13 +69,7 @@ function run()
         echo "$TABLE not built yet" >&2 && return 1
     fi
 
-    local style=$(mktemp)
-
-    red_white_blue > "$style"
-
-    flag | sed -e 's/\(.\)/\1,/g' -e 's/,$//' | "$TABLE" -s "$style"
-
-    rm -f "$style"
+    flag | "$TABLE" -s "$(red_white_blue)"
 }
 
 if [[ $(caller | awk '{print $1}') -eq 0 ]]; then run; fi
