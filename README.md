@@ -1,5 +1,5 @@
 # cli-table
-Formatted tables on the CLI
+Formatted tables on the <span style="color:#ff0000">CLI</span>
 
 # Build
 
