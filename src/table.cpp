@@ -251,8 +251,9 @@ std::ostream& Table::render(std::ostream &out) const
             [&out, &row_n, &col_n, &width_for, &col_count, &row_style, this](auto &col)
         {
             auto col_style = style.col(col_n, col);
+            auto position_style = style.position(row_n, col_n, col);
 
-            col.get()->set_style(row_style, col_style);
+            col.get()->set_style(row_style, col_style, position_style);
 
             auto sgr = col.get()->sgr_codes();
             Align align = col.get()->alignment();
@@ -432,18 +433,23 @@ size_t Table::Cell::length() const
 
 void Table::Cell::set_style(
     const std::pair<std::vector<size_t>, Align> &row_style,
-    const std::pair<std::vector<size_t>, Align> &col_style)
+    const std::pair<std::vector<size_t>, Align> &col_style,
+    const std::pair<std::vector<size_t>, Align> &position_style)
 {
     auto row_sgr = std::get<0>(row_style);
-    auto col_sgr = std::get<0>(col_style);
     auto row_align = std::get<1>(row_style);
+    auto col_sgr = std::get<0>(col_style);
     auto col_align = std::get<1>(col_style);
+    auto position_sgr = std::get<0>(position_style);
+    auto position_align = std::get<1>(position_style);
 
     if (row_sgr.size() > 0) sgr = row_sgr;
     if (col_sgr.size() > 0) sgr = col_sgr;
+    if (position_sgr.size() > 0) sgr = position_sgr;
 
     align = row_align;
     if (col_align != automatic) align = col_align;
+    if (position_align != automatic) align = position_align;
     if (align == automatic) align = left;
 }
 
@@ -517,6 +523,16 @@ void Table::Style::update(const json &config)
         else if (config["col"].is_array())
             for (const auto &col_config : config["col"])
                 col_configs.insert(col_configs.begin(), col_config);
+    }
+
+    if (config.count("position") != 0)
+    {
+        if (config["position"].is_object())
+            position_configs.insert(position_configs.begin(), config["position"]);
+
+        else if (config["position"].is_array())
+            for (const auto &position_config : config["position"])
+                position_configs.insert(position_configs.begin(), position_config);
     }
 }
 
@@ -720,6 +736,98 @@ std::pair<std::vector<size_t>, Align> Table::Style::col(
                     sgr.push_back(number.get<size_t>());
             else
                 sgr.push_back(col_sgr.get<size_t>());
+        }
+    }
+
+    return std::make_pair(sgr, align);
+}
+
+/**
+ * {
+ *     "position": {
+ *         "where": {
+ *             "col_n": 2,
+ *             "row_n": 2
+ *         }
+ *         "sgr": 32
+ *     }
+ * }
+ */
+std::pair<std::vector<size_t>, Align> Table::Style::position(
+    size_t row_n,
+    size_t col_n,
+    const std::shared_ptr<Table::Cell> &col) const
+{
+    std::vector<size_t> sgr;
+    Align align(automatic);
+
+    auto is_a_match = [&row_n, &col_n, &col](json col_config)
+    {
+        size_t expected = 0, matched = 0;
+
+        if (col_config.count("where") == 0)
+            return false;
+
+        auto where = col_config["where"];
+
+        if (expected == matched
+            && where.count("row_n") != 0
+            && where.count("col_n") != 0)
+        {
+            expected++;
+
+            size_t r_n = where["row_n"].get<size_t>();
+            size_t c_n = where["col_n"].get<size_t>();
+
+            if (row_n == r_n && col_n == c_n) matched++;
+        }
+
+        if (expected == matched
+            && where.count("text") != 0)
+        {
+            expected++;
+
+            std::string text = where["text"].get<std::string>();
+
+            if (col.get()->cmp(text)) matched++;
+        }
+
+        return expected > 0 && expected == matched;
+    };
+
+    auto get_alignment = [](json position_config)
+    {
+        auto alignment = position_config["align"].get<std::string>();
+
+        return alignment == "left"   ? left
+             : alignment == "center" ? center
+             : alignment == "right"  ? right
+             :                         automatic;
+    };
+
+    if (position_configs.size() > 0)
+    {
+        json position_sgr;
+
+        for (const auto &position_config : position_configs)
+        {
+            if (is_a_match(position_config))
+            {
+                if (position_config.count("sgr") != 0)
+                    position_sgr = position_config["sgr"];
+
+                if (position_config.count("align") != 0)
+                    align = get_alignment(position_config);
+            }
+        }
+
+        if (position_sgr > 0)
+        {
+            if (position_sgr.is_array())
+                for (const auto &number : position_sgr)
+                    sgr.push_back(number.get<size_t>());
+            else
+                sgr.push_back(position_sgr.get<size_t>());
         }
     }
 

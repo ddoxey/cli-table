@@ -171,7 +171,8 @@ public:
         size_t length() const;
         void set_style(
             const std::pair<std::vector<size_t>, Align> &row_style,
-            const std::pair<std::vector<size_t>, Align> &col_style);
+            const std::pair<std::vector<size_t>, Align> &col_style,
+            const std::pair<std::vector<size_t>, Align> &position_style);
         Align alignment() const;
         std::pair<std::string, std::string> sgr_codes() const;
         std::ostream& str(std::ostream &out) const;
@@ -199,9 +200,15 @@ public:
             size_t col_n,
             const std::shared_ptr<Table::Cell> &col) const;
 
+        std::pair<std::vector<size_t>, Align> position(
+            size_t row_n,
+            size_t col_n,
+            const std::shared_ptr<Table::Cell> &col) const;
+
     private:
         std::vector<json> row_configs;
         std::vector<json> col_configs;
+        std::vector<json> position_configs;
     };
 
     Table();

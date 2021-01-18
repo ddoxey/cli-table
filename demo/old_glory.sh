@@ -51,18 +51,18 @@ EOJ
 
 function run()
 {
-    if [[ ! -e $TABLE ]]
+    if [[ ! -e "$TABLE" ]]
     then
         echo "$TABLE not built yet" >&2 && return 1
     fi
 
     local style=$(mktemp)
 
-    red_white_blue > $style
+    red_white_blue > "$style"
 
-    flag | sed -e 's/\(.\)/\1,/g' -e 's/,$//' | $TABLE -s $style
+    flag | sed -e 's/\(.\)/\1,/g' -e 's/,$//' | "$TABLE" -s "$style"
 
-    rm -f $style
+    rm -f "$style"
 }
 
 if [[ $(caller | awk '{print $1}') -eq 0 ]]; then run; fi
