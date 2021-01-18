@@ -92,4 +92,4 @@ Or in a case where your styling rules are in a JSON file.
 echo 'hello,world' | table -s style.json
 ```
 
-See the scripts in the *demos* folder for more examples.
+See the scripts in the *demo* folder for more examples.
