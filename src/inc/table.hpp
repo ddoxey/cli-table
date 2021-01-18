@@ -176,7 +176,7 @@ public:
         Align alignment() const;
         std::pair<std::string, std::string> sgr_codes() const;
         std::ostream& str(std::ostream &out) const;
-        bool cmp(std::string &subtext) const;
+        bool cmp(const std::string &subtext) const;
 
     private:
         std::vector<size_t> sgr;
@@ -206,9 +206,19 @@ public:
             const std::shared_ptr<Table::Cell> &col) const;
 
     private:
-        std::vector<json> row_configs;
-        std::vector<json> col_configs;
-        std::vector<json> position_configs;
+
+        struct rule {
+            int row_n = -1;
+            int col_n = -1;
+            int mod = -1;
+            std::string text;
+            Align align;
+            std::vector<size_t> sgr;
+        };
+
+        std::vector<rule> row_rules;
+        std::vector<rule> col_rules;
+        std::vector<rule> pos_rules;
     };
 
     Table();
