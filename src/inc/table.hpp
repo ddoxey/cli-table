@@ -6,6 +6,7 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 #define LIGHT_HORIZONTAL "\u2500"
 #define HEAVY_HORIZONTAL "\u2501"
@@ -152,6 +153,8 @@
 #define LIGHT_DIAGONAL_DIAMOND "\u1fbae"
 #define LIGHT_HORIZONTAL_WITH_VERTICAL_STROKE "\u1fbaf"
 
+using json = nlohmann::json;
+
 enum Align { left, center, right, automatic };
 
 
@@ -166,9 +169,14 @@ public:
         Cell(const std::string &text);
 
         size_t length() const;
+        void set_style(
+            const std::pair<std::vector<size_t>, Align> &row_style,
+            const std::pair<std::vector<size_t>, Align> &col_style,
+            const std::pair<std::vector<size_t>, Align> &position_style);
         Align alignment() const;
         std::pair<std::string, std::string> sgr_codes() const;
         std::ostream& str(std::ostream &out) const;
+        bool cmp(std::string &subtext) const;
 
     private:
         std::vector<size_t> sgr;
@@ -177,12 +185,39 @@ public:
         size_t size;
     };
 
+    class Style
+    {
+    public:
+        Style() {};
+
+        void update(const json &config);
+
+        std::pair<std::vector<size_t>, Align> row(
+            size_t row_n,
+            const std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>> &cols) const;
+
+        std::pair<std::vector<size_t>, Align> col(
+            size_t col_n,
+            const std::shared_ptr<Table::Cell> &col) const;
+
+        std::pair<std::vector<size_t>, Align> position(
+            size_t row_n,
+            size_t col_n,
+            const std::shared_ptr<Table::Cell> &col) const;
+
+    private:
+        std::vector<json> row_configs;
+        std::vector<json> col_configs;
+        std::vector<json> position_configs;
+    };
+
     Table();
     Table(const size_t width);
     Table(const std::string &title);
     Table(const std::string &title, const size_t width);
     Table(std::istream &ifs);
 
+    void set_style(const json &config);
     void add_header(const std::string &title);
     void add_row(const std::shared_ptr<std::vector<std::string>> &cols);
     void add_col(const std::string &col);
@@ -200,10 +235,10 @@ public:
 private:
     size_t minimum_table_width = 0;
     std::vector<std::shared_ptr<std::vector<std::shared_ptr<Cell>>>> rows;
+    Style style;
 
     void horizontal(std::ostream &out, std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const;
     void intermediate(std::ostream &out, std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const;
-
     std::vector<std::shared_ptr<std::vector<size_t>>> compute_widths_() const;
 };
 

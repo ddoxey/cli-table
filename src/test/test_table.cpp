@@ -10,7 +10,6 @@ protected:
     virtual void TearDown() { }
 };
 
-
 TEST_F(TableTest, EmptyConstructor)
 {
     Table table;
@@ -67,7 +66,7 @@ TEST_F(TableTest, TitleOneTwoThree)
     std::stringstream expect;
     expect << "┌───────────┐\n"
            << "│   title   │\n"
-           << "│     a     │\n"
+           << "│ a         │\n"
            << "├─────┬─────┤\n"
            << "│ b   │ c   │\n"
            << "├───┬─┴─┬───┤\n"
@@ -162,7 +161,7 @@ TEST_F(TableTest, StressColumnAutosizing)
            << "├───┬─┴─┬───┼───┬─┴─┬──┴┬───┤\n"
            << "│ . │ . │ . │ . │ . │ . │ . │\n"
            << "├───┴───┴───┴───┴───┴───┴───┤\n"
-           << "│             .             │\n"
+           << "│ .                         │\n"
            << "├──────┬──────┬──────┬──────┤\n"
            << "│ .    │ .    │ .    │ .    │\n"
            << "├──────┴──────┼──────┴──────┤\n"
@@ -172,7 +171,7 @@ TEST_F(TableTest, StressColumnAutosizing)
            << "├───┬──┴┬───┬─┴─┬───┬┴──┬───┤\n"
            << "│ . │ . │ . │ . │ . │ . │ . │\n"
            << "├───┴───┴───┴───┴───┴───┴───┤\n"
-           << "│             .             │\n"
+           << "│ .                         │\n"
            << "└───────────────────────────┘\n";
     EXPECT_EQ(result.str(), expect.str());
 }
@@ -212,9 +211,33 @@ TEST_F(TableTest, AlignmentIssuesB)
 TEST_F(TableTest, ConfigurableCellAlignment)
 {
     Table table("title", 50);
-    table << "{\"align\": \"left\", \"text\": \"<-a\"}";
-    table << "{\"align\": \"center\", \"text\": \"<-b->\"}";
-    table << "{\"align\": \"right\", \"text\": \"c->\"}";
+    table << "<-a";
+    table << "<-b->";
+    table << "c->";
+    table.set_style(R"(
+        {
+            "col": [
+                {
+                    "where": {
+                        "n": 0
+                    },
+                    "align": "left"
+                },
+                {
+                    "where": {
+                        "n": 1
+                    },
+                    "align": "center"
+                },
+                {
+                    "where": {
+                        "n": 2
+                    },
+                    "align": "right"
+                }
+            ]
+        }
+    )"_json);
     std::stringstream result;
     result << table;
     std::stringstream expect;
@@ -226,24 +249,90 @@ TEST_F(TableTest, ConfigurableCellAlignment)
     EXPECT_EQ(result.str(), expect.str());
 }
 
-TEST_F(TableTest, SGRColor)
+TEST_F(TableTest, AlternatingRowColor)
 {
     Table table("title");
-    table << "{\"sgr\": [31, 1], \"text\": \"a\"}";
-    table << "{\"sgr\": [42, 1], \"text\": \"b\"}";
-    table << "{\"sgr\": 32, \"text\": \"c\"}";
+    table << "a";
+    table << "a";
+    table << "\n";
+    table << "b";
+    table << "b";
+    table << "\n";
+    table << "c";
+    table << "c";
+    table << "\n";
+    table << "d";
+    table << "d";
+    table.set_style(R"(
+        {
+            "row": {
+                "where": {
+                    "mod": 2
+                },
+                "sgr": 31
+            }
+        }
+    )"_json);
     std::stringstream result;
     result << table;
     std::stringstream expect;
-    expect << "┌───────────┐\n"
-           << "│   title   │\n"
-           << "├───┬───┬───┤\n"
-           << "│\x1B[31;1m a \x1B[0m│\x1B[42;1m b \x1B[0m│\x1B[32m c \x1B[0m│\n"
-           << "└───┴───┴───┘\n";
+    expect << "┌───────┐\n"
+           << "│ title │\n"
+           << "├───┬───┤\n"
+           << "│\x1B[31m a \x1B[0m│\x1B[31m a \x1B[0m│\n"
+           << "│ b │ b │\n"
+           << "│\x1B[31m c \x1B[0m│\x1B[31m c \x1B[0m│\n"
+           << "│ d │ d │\n"
+           << "└───┴───┘\n";
     EXPECT_EQ(result.str(), expect.str());
 }
 
-
+TEST_F(TableTest, AlternatingRowWidthTitle)
+{
+    Table table("title", 15);
+    table << "a";
+    table << "a";
+    table << "\n";
+    table << "b";
+    table << "b";
+    table << "\n";
+    table << "c";
+    table << "c";
+    table << "\n";
+    table << "d";
+    table << "d";
+    table.set_style(R"(
+        {
+            "row": [
+                {
+                    "where": {
+                        "mod": 2
+                    },
+                    "sgr": 31,
+                    "align": "right"
+                },
+                {
+                    "where": {
+                        "n": 0
+                    },
+                    "sgr": [32, 1]
+                }
+            ]
+        }
+    )"_json);
+    std::stringstream result;
+    result << table;
+    std::stringstream expect;
+    expect << "┌─────────────┐\n"
+           << "│\x1B[32;1m    title    \x1B[0m│\n"
+           << "├──────┬──────┤\n"
+           << "│\x1B[31m    a \x1B[0m│\x1B[31m    a \x1B[0m│\n"
+           << "│ b    │ b    │\n"
+           << "│\x1B[31m    c \x1B[0m│\x1B[31m    c \x1B[0m│\n"
+           << "│ d    │ d    │\n"
+           << "└──────┴──────┘\n";
+    EXPECT_EQ(result.str(), expect.str());
+}
 
 int main(int argc, char **argv)
 {

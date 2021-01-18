@@ -58,8 +58,7 @@ Table::Table(std::istream &ifs)
     {
         tokenizer tokens{line};
 
-        auto cols =
-        std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
+        auto cols = std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
 
         if (tokens.begin() == tokens.end())
         {
@@ -77,15 +76,33 @@ Table::Table(std::istream &ifs)
     }
 }
 
+void Table::set_style(const json &config)
+{
+    style.update(config);
+}
+
 void Table::add_header(const std::string &title)
 {
-    auto header =
-    std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
+    auto header = std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
     header.get()->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(title)));
     rows.push_back(header);
 
-    auto next_row =
-    std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
+    json header_style(R"(
+        {
+            "row": {
+                "where": {
+                    "n": 0
+                },
+                "align": "center"
+            }
+        }
+    )"_json);
+
+    header_style["row"]["where"]["n"] = rows.size() - 1;
+
+    style.update(header_style);
+
+    auto next_row = std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
     rows.push_back(next_row);
 }
 
@@ -107,8 +124,7 @@ void Table::add_col(const std::string &column)
 {
     if (column == "\n" || rows.size() == 0)
     {
-        auto cols =
-        std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
+        auto cols = std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
 
         rows.push_back(cols);
 
@@ -225,22 +241,31 @@ std::ostream& Table::render(std::ostream &out) const
 
         size_t col_count = width_for.at(row_n).get()->size();
 
+        auto row_style = style.row(row_n, cols);
+
         col_n = 0;
 
         std::for_each(
             cols.get()->begin(),
             cols.get()->end(),
-            [&out, &row_n, &col_n, &width_for, &col_count](auto &col)
+            [&out, &row_n, &col_n, &width_for, &col_count, &row_style, this](auto &col)
         {
-            Align align = col.get()->alignment();
+            auto col_style = style.col(col_n, col);
+            auto position_style = style.position(row_n, col_n, col);
+
+            col.get()->set_style(row_style, col_style, position_style);
+
             auto sgr = col.get()->sgr_codes();
+            Align align = col.get()->alignment();
+
             size_t width = width_for.at(row_n).get()->at(col_n);
             size_t actual_width = col.get()->length();
             size_t width_diff = width - actual_width;
 
-            if (align == automatic)
+            if (col_count == 1
+                && std::get<1>(row_style) != automatic)
             {
-                align = col_count == 1 ? center : left;
+                align = std::get<1>(row_style);
             }
 
             std::string pad_left(" ");
@@ -398,49 +423,34 @@ std::ostream& operator << (std::ostream &out, const Table &t)
 
 Table::Cell::Cell(const std::string &data)
 {
-    if (data.size() > 0 && data[0] == '{' && data[data.size()-1] == '}')
-    {
-        json config = json::parse(data);
-
-        if (config.count("align") != 0)
-        {
-            auto alignment = config["align"].get<std::string>();
-
-            align = alignment == "left"   ? left
-                  : alignment == "center" ? center
-                  : alignment == "right"  ? right
-                  :                         automatic;
-        }
-
-        if (config.count("sgr") != 0)
-        {
-            if (config["sgr"].is_array())
-            {
-                for (const auto &code : config["sgr"])
-                {
-                    sgr.push_back(code.get<size_t>());
-                }
-            }
-            else
-            {
-                sgr.push_back(config["sgr"].get<size_t>());
-            }
-        }
-
-        if (config.count("text") != 0)
-        {
-            text = config["text"].get<std::string>();
-        }
-    }
-    else
-    {
-        text = data;
-    }
+    text = data;
 }
 
 size_t Table::Cell::length() const
 {
     return text.length();
+}
+
+void Table::Cell::set_style(
+    const std::pair<std::vector<size_t>, Align> &row_style,
+    const std::pair<std::vector<size_t>, Align> &col_style,
+    const std::pair<std::vector<size_t>, Align> &position_style)
+{
+    auto row_sgr = std::get<0>(row_style);
+    auto row_align = std::get<1>(row_style);
+    auto col_sgr = std::get<0>(col_style);
+    auto col_align = std::get<1>(col_style);
+    auto position_sgr = std::get<0>(position_style);
+    auto position_align = std::get<1>(position_style);
+
+    if (row_sgr.size() > 0) sgr = row_sgr;
+    if (col_sgr.size() > 0) sgr = col_sgr;
+    if (position_sgr.size() > 0) sgr = position_sgr;
+
+    align = row_align;
+    if (col_align != automatic) align = col_align;
+    if (position_align != automatic) align = position_align;
+    if (align == automatic) align = left;
 }
 
 Align Table::Cell::alignment() const
@@ -478,6 +488,11 @@ std::pair<std::string, std::string> Table::Cell::sgr_codes() const
     return codes;
 }
 
+bool Table::Cell::cmp(std::string &subtext) const
+{
+    return text.find(subtext) != std::string::npos;
+}
+
 std::ostream& Table::Cell::str(std::ostream &out) const
 {
     return out << text;
@@ -486,4 +501,335 @@ std::ostream& Table::Cell::str(std::ostream &out) const
 std::ostream& operator << (std::ostream &out, const Table::Cell &c)
 {
     return c.str(out);
+}
+
+void Table::Style::update(const json &config)
+{
+    if (config.count("row") != 0)
+    {
+        if (config["row"].is_object())
+            row_configs.insert(row_configs.begin(), config["row"]);
+
+        else if (config["row"].is_array())
+            for (const auto &row_config : config["row"])
+                row_configs.insert(row_configs.begin(), row_config);
+    }
+
+    if (config.count("col") != 0)
+    {
+        if (config["col"].is_object())
+            col_configs.insert(col_configs.begin(), config["col"]);
+
+        else if (config["col"].is_array())
+            for (const auto &col_config : config["col"])
+                col_configs.insert(col_configs.begin(), col_config);
+    }
+
+    if (config.count("position") != 0)
+    {
+        if (config["position"].is_object())
+            position_configs.insert(position_configs.begin(), config["position"]);
+
+        else if (config["position"].is_array())
+            for (const auto &position_config : config["position"])
+                position_configs.insert(position_configs.begin(), position_config);
+    }
+}
+
+/**
+ * {
+ *     "row": {
+ *         "where": {
+ *             "mod": 2
+ *             "text": "PAYDAY"
+ *         }
+ *         "sgr": 32
+ *     }
+ * }
+ */
+std::pair<std::vector<size_t>, Align> Table::Style::row(
+    size_t row_n,
+    const std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>> &cols) const
+{
+    std::vector<size_t> sgr;
+    Align align(automatic);
+
+    auto is_a_match = [&row_n, &cols](json row_config)
+    {
+        size_t expected = 0, matched = 0;
+
+        if (row_config.count("where") == 0)
+            return false;
+
+        auto where = row_config["where"];
+
+        if (expected == matched
+            && where.count("n") != 0)
+        {
+            expected++;
+
+            size_t n = where["n"].get<size_t>();
+
+            if (row_n == n) matched++;
+        }
+
+        if (expected == matched
+            && where.count("mod") != 0)
+        {
+            expected++;
+
+            size_t mod = where["mod"].get<size_t>();
+
+            if (row_n % mod != 0) matched++;
+        }
+
+        if (expected == matched
+            && where.count("text") != 0)
+        {
+            expected++;
+
+            std::string text = where["text"].get<std::string>();
+
+            auto found = std::find_if(
+                cols.get()->begin(),
+                cols.get()->end(),
+                [&text](auto &col)
+                {
+                    return col.get()->cmp(text);
+                }
+            );
+
+            if (found != cols.get()->end()) matched++;
+        }
+
+        return expected > 0 && expected == matched;
+    };
+
+    auto get_alignment = [](json row_config)
+    {
+        auto alignment = row_config["align"].get<std::string>();
+
+        return alignment == "left"   ? left
+             : alignment == "center" ? center
+             : alignment == "right"  ? right
+             :                         automatic;
+    };
+
+    if (row_configs.size() > 0)
+    {
+        json row_sgr;
+
+        for (const auto &row_config : row_configs)
+        {
+            if (is_a_match(row_config))
+            {
+                if (row_config.count("sgr") != 0)
+                    row_sgr = row_config["sgr"];
+
+                if (row_config.count("align") != 0)
+                    align = get_alignment(row_config);
+            }
+        }
+
+        if (row_sgr > 0)
+        {
+            if (row_sgr.is_array())
+                for (const auto &number : row_sgr)
+                    sgr.push_back(number.get<size_t>());
+            else
+                sgr.push_back(row_sgr.get<size_t>());
+        }
+    }
+
+    return std::make_pair(sgr, align);
+}
+
+/**
+ * {
+ *     "col": {
+ *         "where": {
+ *             "n": 2
+ *         }
+ *         "sgr": 32
+ *     }
+ * }
+ */
+std::pair<std::vector<size_t>, Align> Table::Style::col(
+    size_t col_n,
+    const std::shared_ptr<Table::Cell> &col) const
+{
+    std::vector<size_t> sgr;
+    Align align(automatic);
+
+    auto is_a_match = [&col_n, &col](json col_config)
+    {
+        size_t expected = 0, matched = 0;
+
+        if (col_config.count("where") == 0)
+            return false;
+
+        auto where = col_config["where"];
+
+        if (expected == matched
+            && where.count("n") != 0)
+        {
+            expected++;
+
+            size_t n = where["n"].get<size_t>();
+
+            if (col_n == n) matched++;
+        }
+
+        if (expected == matched
+            && where.count("mod") != 0)
+        {
+            expected++;
+
+            size_t mod = where["mod"].get<size_t>();
+
+            if (col_n % mod != 0) matched++;
+        }
+
+        if (expected == matched
+            && where.count("text") != 0)
+        {
+            expected++;
+
+            std::string text = where["text"].get<std::string>();
+
+            if (col.get()->cmp(text)) matched++;
+        }
+
+        return expected > 0 && expected == matched;
+    };
+
+    auto get_alignment = [](json col_config)
+    {
+        auto alignment = col_config["align"].get<std::string>();
+
+        return alignment == "left"   ? left
+             : alignment == "center" ? center
+             : alignment == "right"  ? right
+             :                         automatic;
+    };
+
+    if (col_configs.size() > 0)
+    {
+        json col_sgr;
+
+        for (const auto &col_config : col_configs)
+        {
+            if (is_a_match(col_config))
+            {
+                if (col_config.count("sgr") != 0)
+                    col_sgr = col_config["sgr"];
+
+                if (col_config.count("align") != 0)
+                    align = get_alignment(col_config);
+            }
+        }
+
+        if (col_sgr > 0)
+        {
+            if (col_sgr.is_array())
+                for (const auto &number : col_sgr)
+                    sgr.push_back(number.get<size_t>());
+            else
+                sgr.push_back(col_sgr.get<size_t>());
+        }
+    }
+
+    return std::make_pair(sgr, align);
+}
+
+/**
+ * {
+ *     "position": {
+ *         "where": {
+ *             "col_n": 2,
+ *             "row_n": 2
+ *         }
+ *         "sgr": 32
+ *     }
+ * }
+ */
+std::pair<std::vector<size_t>, Align> Table::Style::position(
+    size_t row_n,
+    size_t col_n,
+    const std::shared_ptr<Table::Cell> &col) const
+{
+    std::vector<size_t> sgr;
+    Align align(automatic);
+
+    auto is_a_match = [&row_n, &col_n, &col](json col_config)
+    {
+        size_t expected = 0, matched = 0;
+
+        if (col_config.count("where") == 0)
+            return false;
+
+        auto where = col_config["where"];
+
+        if (expected == matched
+            && where.count("row_n") != 0
+            && where.count("col_n") != 0)
+        {
+            expected++;
+
+            size_t r_n = where["row_n"].get<size_t>();
+            size_t c_n = where["col_n"].get<size_t>();
+
+            if (row_n == r_n && col_n == c_n) matched++;
+        }
+
+        if (expected == matched
+            && where.count("text") != 0)
+        {
+            expected++;
+
+            std::string text = where["text"].get<std::string>();
+
+            if (col.get()->cmp(text)) matched++;
+        }
+
+        return expected > 0 && expected == matched;
+    };
+
+    auto get_alignment = [](json position_config)
+    {
+        auto alignment = position_config["align"].get<std::string>();
+
+        return alignment == "left"   ? left
+             : alignment == "center" ? center
+             : alignment == "right"  ? right
+             :                         automatic;
+    };
+
+    if (position_configs.size() > 0)
+    {
+        json position_sgr;
+
+        for (const auto &position_config : position_configs)
+        {
+            if (is_a_match(position_config))
+            {
+                if (position_config.count("sgr") != 0)
+                    position_sgr = position_config["sgr"];
+
+                if (position_config.count("align") != 0)
+                    align = get_alignment(position_config);
+            }
+        }
+
+        if (position_sgr > 0)
+        {
+            if (position_sgr.is_array())
+                for (const auto &number : position_sgr)
+                    sgr.push_back(number.get<size_t>());
+            else
+                sgr.push_back(position_sgr.get<size_t>());
+        }
+    }
+
+    return std::make_pair(sgr, align);
 }
