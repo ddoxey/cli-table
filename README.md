@@ -57,7 +57,7 @@ z
 
 : table datb.csv
 ┌───────────────┐
-│       a       │
+│ a             │
 ├───────┬───────┤
 │ b     │ c     │
 ├─────┬─┴──┬────┤
@@ -73,7 +73,23 @@ z
 ├───┴───┼───┴───┤
 │ x     │ y     │
 ├───────┴───────┤
-│       z       │
+│ z             │
 └───────────────┘
 ```
 
+# Stylizing with SGR
+
+You can stylize the table by declaring conditions for applying
+alignment and SGR parameters.
+
+```
+echo 'hello,world' | table -s '{"col":[{"where":{"n":0},"sgr":[1,32]},{"where":{"n":1},"sgr":[1,31]}]}'
+```
+
+Or in a case where your styling rules are in a JSON file.
+
+```
+echo 'hello,world' | table -s style.json
+```
+
+See the scripts in the *demos* folder for more examples.

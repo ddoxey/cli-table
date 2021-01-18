@@ -1,6 +1,20 @@
 #!/bin/bash
+#
+# This script demonstrates some techniques for stylizing a
+# table of text with conditional application of SGR codes.
+#
+# Author: Dylan Doxey <dylan.doxey@gmail.com>
+# Date: 01/18/2021
+#
 
 TABLE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../build/bin/table"
+
+function rint()
+{
+    local from=$1
+    local to=$2
+    shuf -i ${from}-${to} -n 1
+}
 
 function spreadsheet()
 {
@@ -8,10 +22,10 @@ function spreadsheet()
 
     for n in {1..42}
     do
-        echo -n "${n}/1/2021,"
-        echo -n "$(tr '0-9' 'a-z' <<< "$RANDOM"),"
+        printf "%02d/%02d/20%02d," $(rint 1 12) $(rint 1 31) $(rint 1 38)
+        echo -n "$(tr '0-9' 'a-z' <<< "$RANDOM $RANDOM"),"
         echo -n "$RANDOM,"
-        sed 's/\(...\)\(..\)/\1.\2/' <<< "\$$RANDOM"
+        printf "$%d.%02d\n" $(rint 1 1000) $(rint 0 99)
     done
 }
 
@@ -30,7 +44,7 @@ function pizzaz()
             "where": {
                 "n": 0
             },
-            "sgr": [7, 35, 30],
+            "sgr": [1, 40, 103],
             "align": "center"
         }
     ],
@@ -59,13 +73,7 @@ function run()
         echo "$TABLE not built yet" >&2 && return 1
     fi
 
-    local style=$(mktemp)
-
-    pizzaz > "$style"
-
-    spreadsheet | "$TABLE" -s "$style"
-
-    rm -f "$style"
+    spreadsheet | "$TABLE" -s "$(pizzaz)"
 }
 
 if [[ $(caller | awk '{print $1}') -eq 0 ]]; then run; fi
