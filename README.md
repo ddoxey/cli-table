@@ -93,3 +93,14 @@ echo 'hello,world' | table -s style.json
 ```
 
 See the scripts in the *demo* folder for more examples.
+
+```
+bash demo/colors.sh
+...
+
+bash demo/old_glory.sh
+...
+
+bash demo/spreadsheet.sh
+...
+```
