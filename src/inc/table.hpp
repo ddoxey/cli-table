@@ -182,7 +182,6 @@ public:
         std::vector<size_t> sgr;
         Align align = automatic;
         std::string text;
-        size_t size;
     };
 
     class Style
