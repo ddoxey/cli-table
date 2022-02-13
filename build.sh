@@ -13,10 +13,11 @@ function build()
 {
     cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-    mkdir -p build
+    if [[ -d build ]]; then rm -f build; fi
+    mkdir -p build || return 1
     cd build
 
-    $CMAKE ../src/ || return 1
+    $CMAKE .. || return 1
 
     if [[ "$1" == "-p" ]]
     then
@@ -46,11 +47,11 @@ function main()
         echo "cmake not installed" >&2 && return 1
     fi
 
-    local tokenizer_hpp=$(find /usr -type f -name 'tokenizer.hpp' 2>/dev/null | grep 'boost.tokenizer')
+    local json_hpp=$(find /usr -type f -name 'json.hpp' 2>/dev/null | grep 'nlohmann')
 
-    if [[ -z $tokenizer_hpp ]]
+    if [[ -z $json_hpp ]]
     then
-        echo "boost/tokenizer.hpp not found" >&2 && return 1
+        echo "nlohmann/json.hpp not found" >&2 && return 1
     fi
 
     local gtest_h=$(find /usr -type f -name 'gtest.h' 2>/dev/null | grep 'gtest.gtest')

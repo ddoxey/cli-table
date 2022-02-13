@@ -22,7 +22,7 @@ int main(int ac, const char *av[])
             std::string style_text;
             std::string style_source(av[i]);
 
-            auto style_ifs = std::ifstream(style_source, std::ios::binary);
+            std::ifstream style_ifs(style_source, std::ios::binary);
 
             if (style_ifs.good())
             {
@@ -53,7 +53,7 @@ int main(int ac, const char *av[])
     }
     else
     {
-        auto data_ifs = std::ifstream(filename, std::ios::binary);
+        std::ifstream data_ifs(filename, std::ios::binary);
 
         if (data_ifs.good())
         {

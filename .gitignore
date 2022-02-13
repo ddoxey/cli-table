@@ -1,4 +1,6 @@
 **/CMakeFiles/*
+demo/*.csv
+demo/*.json
 build/*
 var/*
 .*.swp

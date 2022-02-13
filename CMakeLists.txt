@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.22.2)
 
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 set(CMAKE_CXX_STANDARD 14)
@@ -16,25 +16,23 @@ include_directories(
     /usr/src/googletest/googletest/include
     /usr/local/include
     /usr/include
-    inc
+    src/
 )
 
-find_package(Boost 1.67 REQUIRED COMPONENTS thread)
+add_library(tablib src/table.cpp)
 
-add_library(tablib table.cpp)
-
-add_executable(table main.cpp inc/table.hpp)
+add_executable(table src/main.cpp src/table.hpp)
 
 target_link_libraries(table
     tablib 
 )
 
-add_executable(test_table test/test_table.cpp)
+add_executable(test_table src/test/test_table.cpp)
 
 target_link_libraries(test_table
     tablib 
     gtest
-    Boost::thread
+    pthread
 )
 
 install(
@@ -53,7 +51,7 @@ install(
                 WORLD_READ
 )
 
-install(FILES inc/table.hpp
+install(FILES src/table.hpp
         DESTINATION include/cli-table/
         PERMISSIONS OWNER_READ OWNER_WRITE
                     GROUP_READ

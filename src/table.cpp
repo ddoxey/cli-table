@@ -1,7 +1,6 @@
 #include <cmath>
 #include <numeric>
 #include <algorithm>
-#include <boost/tokenizer.hpp>
 #include <nlohmann/json.hpp>
 #include "table.hpp"
 
@@ -50,25 +49,23 @@ Table::Table(std::istream &ifs)
 {
     rows = std::vector<std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>>();
 
-    using tokenizer = boost::tokenizer<boost::escaped_list_separator<char>>;
-
     std::string line;
 
     while (std::getline(ifs, line))
     {
-        tokenizer tokens{line};
+        Table::Tokenizer tokens{line};
 
         auto cols = std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
 
         if (tokens.begin() == tokens.end())
         {
-            cols.get()->push_back(std::shared_ptr<Table::Cell>(new Table::Cell("")));
+            cols->push_back(std::shared_ptr<Table::Cell>(new Table::Cell("")));
         }
         else
         {
             for (const auto &token : tokens)
             {
-                cols.get()->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(token)));
+                cols->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(token)));
             }
         }
 
@@ -84,7 +81,7 @@ void Table::set_style(const json &config)
 void Table::add_header(const std::string &title)
 {
     auto header = std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
-    header.get()->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(title)));
+    header->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(title)));
     rows.push_back(header);
 
     json header_style(R"(
@@ -110,10 +107,10 @@ void Table::add_row(const std::shared_ptr<std::vector<std::string>> &columns)
 {
     auto cols = std::shared_ptr<std::vector<std::shared_ptr<Table::Cell>>>(new std::vector<std::shared_ptr<Table::Cell>>());
 
-    std::for_each(columns.get()->begin(), columns.get()->end(),
+    std::for_each(columns->begin(), columns->end(),
         [&cols](std::string &col)
         {
-            cols.get()->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(col)));
+            cols->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(col)));
         }
     );
 
@@ -132,7 +129,7 @@ void Table::add_col(const std::string &column)
             return;
     }
 
-    rows.back().get()->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(column)));
+    rows.back()->push_back(std::shared_ptr<Table::Cell>(new Table::Cell(column)));
 }
 
 void Table::horizontal(std::ostream &out, std::vector<std::shared_ptr<std::vector<size_t>>> &width_for, size_t index) const
@@ -144,8 +141,8 @@ void Table::horizontal(std::ostream &out, std::vector<std::shared_ptr<std::vecto
     index = index == 0 ? index : width_for.size() - 1;
 
     std::for_each(
-        width_for.at(index).get()->begin(),
-        width_for.at(index).get()->end(),
+        width_for.at(index)->begin(),
+        width_for.at(index)->end(),
         [&out, &left, &tee](size_t width)
     {
         out << left;
@@ -168,8 +165,8 @@ void Table::intermediate(std::ostream &out, std::vector<std::shared_ptr<std::vec
     size_t upper_index = index;
     size_t below_index = index + 1;
 
-    size_t upper_col_n = width_for.at(upper_index).get()->size();
-    size_t below_col_n = width_for.at(below_index).get()->size();
+    size_t upper_col_n = width_for.at(upper_index)->size();
+    size_t below_col_n = width_for.at(below_index)->size();
 
     if (upper_col_n == below_col_n)
         return;
@@ -178,8 +175,8 @@ void Table::intermediate(std::ostream &out, std::vector<std::shared_ptr<std::vec
     upper_vert.push_back(true);
 
     std::for_each(
-        width_for.at(upper_index).get()->begin(),
-        width_for.at(upper_index).get()->end(),
+        width_for.at(upper_index)->begin(),
+        width_for.at(upper_index)->end(),
         [&upper_vert](size_t width)
     {
         for (size_t i = 0; i < width; i++)
@@ -192,8 +189,8 @@ void Table::intermediate(std::ostream &out, std::vector<std::shared_ptr<std::vec
     below_vert.push_back(true);
 
     std::for_each(
-        width_for.at(below_index).get()->begin(),
-        width_for.at(below_index).get()->end(),
+        width_for.at(below_index)->begin(),
+        width_for.at(below_index)->end(),
         [&below_vert](size_t width)
     {
         for (size_t i = 0; i < width; i++)
@@ -234,32 +231,32 @@ std::ostream& Table::render(std::ostream &out) const
     std::for_each(
         rows.begin(),
         rows.end(),
-        [&out, &row_n, &col_n, &width_for, this](auto &cols)
+        [&out, &row_n, &col_n, &width_for, this](decltype(*rows.begin()) &cols)
     {
-        if (cols.get()->begin() ==  cols.get()->end())
+        if (cols->begin() ==  cols->end())
             return;
 
-        size_t col_count = width_for.at(row_n).get()->size();
+        size_t col_count = width_for.at(row_n)->size();
 
         auto row_style = style.row(row_n, cols);
 
         col_n = 0;
 
         std::for_each(
-            cols.get()->begin(),
-            cols.get()->end(),
-            [&out, &row_n, &col_n, &width_for, &col_count, &row_style, this](auto &col)
+            cols->begin(),
+            cols->end(),
+            [&out, &row_n, &col_n, &width_for, &col_count, &row_style, this](decltype(*cols->begin()) &col)
         {
             auto col_style = style.col(col_n, col);
             auto position_style = style.position(row_n, col_n, col);
 
-            col.get()->set_style(row_style, col_style, position_style);
+            col->set_style(row_style, col_style, position_style);
 
-            auto sgr = col.get()->sgr_codes();
-            Align align = col.get()->alignment();
+            auto sgr = col->sgr_codes();
+            Align align = col->alignment();
 
-            size_t width = width_for.at(row_n).get()->at(col_n);
-            size_t actual_width = col.get()->length();
+            size_t width = width_for.at(row_n)->at(col_n);
+            size_t actual_width = col->length();
             size_t width_diff = width - actual_width;
 
             if (col_count == 1
@@ -330,31 +327,31 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
     std::for_each(
         rows.begin(),
         rows.end(),
-        [&row_n, &col_n, &max_col_count, &row_width, &max_row_width, &width_for](auto &cols)
+        [&row_n, &col_n, &max_col_count, &row_width, &max_row_width, &width_for](decltype(*rows.begin()) &cols)
     {
         col_n = 0;
         row_width = 0;
 
         auto widths = std::shared_ptr<std::vector<size_t>>(new std::vector<size_t>());
 
-        if (cols.get()->begin() ==  cols.get()->end())
+        if (cols->begin() ==  cols->end())
             return;
 
         std::for_each(
-            cols.get()->begin(),
-            cols.get()->end(),
-            [&row_n, &col_n, &row_width, &widths, &width_for](auto &col)
+            cols->begin(),
+            cols->end(),
+            [&row_n, &col_n, &row_width, &widths, &width_for](decltype(*cols->begin()) &col)
         {
             size_t above_width = 0;
-            size_t width = MIN_PADDING + col.get()->length();
+            size_t width = MIN_PADDING + col->length();
 
             for (int r_n = row_n - 1; r_n >= 0; r_n--)
             {
-                if (width_for.at(r_n).get()->size() == 1
-                    || width_for.at(r_n).get()->size() <= col_n)
+                if (width_for.at(r_n)->size() == 1
+                    || width_for.at(r_n)->size() <= col_n)
                     continue;
 
-                above_width = width_for.at(r_n).get()->at(col_n);
+                above_width = width_for.at(r_n)->at(col_n);
                 break;
             }
 
@@ -366,16 +363,16 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
             {
                 for (int r_n = row_n - 1; r_n >= 0; r_n--)
                 {
-                    if (width_for.at(r_n).get()->size() == 1
-                        || width_for.at(r_n).get()->size() <= col_n)
+                    if (width_for.at(r_n)->size() == 1
+                        || width_for.at(r_n)->size() <= col_n)
                         continue;
 
                     // update rows above with new wider width
-                    width_for.at(r_n).get()->at(col_n) = width;
+                    width_for.at(r_n)->at(col_n) = width;
                 }
             }
 
-            widths.get()->push_back(width);
+            widths->push_back(width);
 
             row_width += width;
 
@@ -384,7 +381,7 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
 
         width_for.push_back(widths);
 
-        size_t col_count = widths.get()->size();
+        size_t col_count = widths->size();
         size_t markup_count = 1 + col_count;
 
         max_col_count = std::max(col_count, max_col_count);
@@ -395,19 +392,19 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
 
     max_row_width = std::max(max_row_width, minimum_table_width);
 
-    std::for_each(width_for.begin(), width_for.end(), [&max_row_width](auto &cols)
+    std::for_each(width_for.begin(), width_for.end(), [&max_row_width](decltype(*width_for.begin()) &cols)
     {
-        size_t col_count = cols.get()->size();
+        size_t col_count = cols->size();
         size_t markup_count = 1 + col_count;
 
         size_t col_n = 0;
 
-        while (std::accumulate(cols.get()->begin(),
-                               cols.get()->end(),
+        while (std::accumulate(cols->begin(),
+                               cols->end(),
                                markup_count) < max_row_width)
         {
             // bulk up columns until each row is the same width
-            cols.get()->at(col_n++) += 1;
+            cols->at(col_n++) += 1;
 
             if (col_n == col_count) col_n = 0;
         }
@@ -419,6 +416,28 @@ std::vector<std::shared_ptr<std::vector<size_t>>> Table::compute_widths_() const
 std::ostream& operator << (std::ostream &out, const Table &t)
 {
     return t.render(out);
+}
+
+Table::Tokenizer::Tokenizer(const std::string &line)
+{
+    char separator = ',';
+    std::array<char, 2> last_two{' ', ' '};
+    std::string token{};
+
+    for (const char &c : line)
+    {
+        if (c == separator && last_two[1] != '/' && last_two[0] != '/')
+        {
+            tokens_.push_back(token);
+            token.clear();
+        }
+        else
+        {
+            token.push_back(c);
+        }
+        last_two[0] = last_two[1];
+        last_two[1] = c;
+    }
 }
 
 Table::Cell::Cell(const std::string &data)
@@ -505,7 +524,7 @@ std::ostream& operator << (std::ostream &out, const Table::Cell &c)
 
 void Table::Style::update(const json &config)
 {
-    auto parse_style_conf = [](const json &config, const std::string &type)
+    auto parse_style_conf = [](const json &config, const std::string &type) -> Table::Style::rule
     {
         const json where = config["where"];
 
@@ -552,7 +571,7 @@ void Table::Style::update(const json &config)
                 sgr.push_back(config["sgr"].get<size_t>());
         }
 
-        return Table::Style::rule{row_n, col_n, mod, text, align, sgr};
+        return Table::Style::rule(row_n, col_n, mod, text, align, sgr);
     };
 
     if (config.count("row") != 0)
@@ -651,7 +670,7 @@ std::pair<std::vector<size_t>, Align> Table::Style::row(
     std::for_each(
         row_rules.begin(),
         row_rules.end(),
-        [&row_n, &cols, &row_sgr, &align](auto &rule)
+        [&row_n, &cols, &row_sgr, &align](decltype(*row_rules.begin()) &rule)
         {
             size_t expected = 0, matched = 0;
 
@@ -677,15 +696,15 @@ std::pair<std::vector<size_t>, Align> Table::Style::row(
                 expected++;
 
                 auto found = std::find_if(
-                    cols.get()->begin(),
-                    cols.get()->end(),
-                    [&rule](auto &col)
+                    cols->begin(),
+                    cols->end(),
+                    [&rule](decltype(*cols->begin()) &col)
                     {
-                        return col.get()->cmp(rule.text);
+                        return col->cmp(rule.text);
                     }
                 );
 
-                if (found != cols.get()->end()) matched++;
+                if (found != cols->end()) matched++;
             }
 
             if (expected > 0 && expected == matched)
@@ -730,7 +749,7 @@ std::pair<std::vector<size_t>, Align> Table::Style::col(
     std::for_each(
         col_rules.begin(),
         col_rules.end(),
-        [&col_n, &col, &col_sgr, &align](auto &rule)
+        [&col_n, &col, &col_sgr, &align](decltype(*col_rules.begin()) &rule)
         {
             size_t expected = 0, matched = 0;
 
@@ -755,7 +774,7 @@ std::pair<std::vector<size_t>, Align> Table::Style::col(
             {
                 expected++;
 
-                if (col.get()->cmp(rule.text)) matched++;
+                if (col->cmp(rule.text)) matched++;
             }
 
             if (expected > 0 && expected == matched)
@@ -802,7 +821,7 @@ std::pair<std::vector<size_t>, Align> Table::Style::position(
     std::for_each(
         pos_rules.begin(),
         pos_rules.end(),
-        [&row_n, &col_n, &col, &position_sgr, &align](auto &rule)
+        [&row_n, &col_n, &col, &position_sgr, &align](decltype(*pos_rules.begin()) &rule)
         {
             size_t expected = 0, matched = 0;
 
@@ -820,7 +839,7 @@ std::pair<std::vector<size_t>, Align> Table::Style::position(
             {
                 expected++;
 
-                if (col.get()->cmp(rule.text)) matched++;
+                if (col->cmp(rule.text)) matched++;
             }
 
             if (expected > 0 && expected == matched)

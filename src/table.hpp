@@ -161,6 +161,18 @@ enum Align { left, center, right, automatic };
 class Table
 {
 public:
+    class Tokenizer
+    {
+    public:
+        Tokenizer() = delete;
+        Tokenizer(const std::string &text);
+
+        std::vector<std::string>::iterator begin() { return tokens_.begin(); }
+        std::vector<std::string>::iterator end() { return tokens_.end(); }
+
+    private:
+        std::vector<std::string> tokens_{};
+    };
 
     class Cell
     {
@@ -213,6 +225,14 @@ public:
             std::string text;
             Align align;
             std::vector<size_t> sgr;
+
+            rule(int r_n, int c_n, int m, std::string &t, Align &a, std::vector<size_t> &s):
+                row_n(r_n),
+                col_n(c_n),
+                mod(m),
+                text(t),
+                align(a),
+                sgr(s) {}
         };
 
         std::vector<rule> row_rules;
