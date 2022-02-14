@@ -420,24 +420,46 @@ std::ostream& operator << (std::ostream &out, const Table &t)
 
 Table::Tokenizer::Tokenizer(const std::string &line)
 {
-    char separator = ',';
+    const char esc = '\\';
+    const char separator = ',';
     std::array<char, 2> last_two{' ', ' '};
     std::string token{};
 
+    auto not_escaped = [&esc, &separator](std::string &txt) -> bool
+    {
+        size_t count{0};
+        if (txt.size() > 1)
+            for (int i = txt.size() - 1; i > 0; i--)
+            {
+                if (txt[i] != esc) break;
+                count++;
+            }
+        return count % 2 == 0;
+    };
+
     for (const char &c : line)
     {
-        if (c == separator && last_two[1] != '/' && last_two[0] != '/')
+        if (c == separator && not_escaped(token))
         {
             tokens_.push_back(token);
             token.clear();
         }
         else
         {
+            if (   token.length() > 1
+                && token[token.length() - 1] == separator
+                && token[token.length() - 2] == esc)
+            {
+                token[token.length() - 2] = token[token.length() - 1];
+                token.pop_back();
+            }
             token.push_back(c);
         }
         last_two[0] = last_two[1];
         last_two[1] = c;
     }
+
+    if (token.length() > 0) tokens_.push_back(token);
 }
 
 Table::Cell::Cell(const std::string &data)
