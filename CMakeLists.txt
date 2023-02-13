@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22.2)
+cmake_minimum_required(VERSION 3.22.0)
 
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 set(CMAKE_CXX_STANDARD 14)
@@ -29,9 +29,11 @@ target_link_libraries(table
 
 add_executable(test_table src/test/test_table.cpp)
 
+find_package(GTest CONFIG REQUIRED)
+
 target_link_libraries(test_table
     tablib 
-    gtest
+    GTest::gtest
     pthread
 )
 

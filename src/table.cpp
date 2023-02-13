@@ -425,7 +425,7 @@ Table::Tokenizer::Tokenizer(const std::string &line)
     std::array<char, 2> last_two{' ', ' '};
     std::string token{};
 
-    auto not_escaped = [&esc, &separator](std::string &txt) -> bool
+    auto not_escaped = [](std::string &txt) -> bool
     {
         size_t count{0};
         if (txt.size() > 1)

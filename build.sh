@@ -13,7 +13,7 @@ function build()
 {
     cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-    if [[ -d build ]]; then rm -f build; fi
+    if [[ -d build ]]; then rm -rf build; fi
     mkdir -p build || return 1
     cd build
 
